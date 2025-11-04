@@ -27,7 +27,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   final List<GlobalKey> _tileKeys = [];
   Offset? _dragStart;
   Offset? _dragCurrent;
-  int? _dragSourceIndex;
   bool _isDragging = false;
 
   int? _damageTargetIndex;
@@ -50,8 +49,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     return null;
   }
 
-  Offset? _getTileCenter(int index) => _getTileRect(index)?.center;
-
   int? _findTileAt(Offset pos) {
     for (var i = 0; i < _tileKeys.length; i++) {
       final rect = _getTileRect(i);
@@ -62,7 +59,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
   void _startDrag(int source, Offset touchGlobal) {
     setState(() {
-      _dragSourceIndex = source;
       _dragStart = touchGlobal; // start at touch point
       _dragCurrent = touchGlobal;
       _isDragging = true;
@@ -82,7 +78,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       _isDragging = false;
       _dragCurrent = null;
       _dragStart = null;
-      _dragSourceIndex = null;
     });
 
     if (target != null) {
