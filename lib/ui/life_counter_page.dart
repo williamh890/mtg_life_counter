@@ -27,6 +27,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   final List<GlobalKey> _tileKeys = [];
   Offset? _dragStart;
   Offset? _dragCurrent;
+  int? _dragSourceIndex;
   bool _isDragging = false;
 
   int? _damageTargetIndex;
@@ -58,8 +59,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   }
 
   void _startDrag(int source, Offset touchGlobal) {
+    if (_damageTargetIndex == source) return; // disable while in damage mode
     setState(() {
-      _dragStart = touchGlobal; // start at touch point
+      _dragSourceIndex = source;
+      _dragStart = touchGlobal;
       _dragCurrent = touchGlobal;
       _isDragging = true;
       _damageTargetIndex = null;
@@ -78,10 +81,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       _isDragging = false;
       _dragCurrent = null;
       _dragStart = null;
+      _dragSourceIndex = null;
     });
 
     if (target != null) {
-      // remove target != source check
       setState(() {
         _damageTargetIndex = target;
         _damageAmount = 1;
@@ -98,6 +101,21 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     setState(() => _damageTargetIndex = null);
   }
 
+  double _getPlayerRotateAngle(List<int> row, int index) {
+    // Odd-count rows (1 player wide) stay upright
+    if (row.length == 1) {
+      return 0;
+    }
+
+    // For 2-player rows: left rotated 180°, right stays normal
+    final isLeftTile = row.indexOf(index) == 0;
+    if (isLeftTile) {
+      return pi / 2;
+    } else {
+      return - pi / 2;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final count = widget.playerCount;
@@ -108,71 +126,112 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           final bloc = context.read<LifeBloc>();
           return BlocBuilder<LifeBloc, List<int>>(
             builder: (context, lives) {
-              final columns = count <= 2 ? 1 : 2;
-              final rows = (count / columns).ceil();
               return Scaffold(
-                body: Stack(
-                  children: [
-                    GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        childAspectRatio:
-                            MediaQuery.of(context).size.width /
-                            MediaQuery.of(context).size.height *
-                            columns /
-                            rows,
-                      ),
-                      itemCount: count,
-                      itemBuilder: (context, i) {
-                        return GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onPanStart: (details) {
-                            if (_damageTargetIndex == i) {
-                              return; // block new drag
-                            }
-                            _startDrag(i, details.globalPosition);
-                          },
-                          onPanUpdate: (d) => _updateDrag(d.globalPosition),
-                          onPanEnd: (_) {
-                            if (_dragCurrent != null) _endDrag(_dragCurrent!);
-                          },
-                          child: Container(
-                            key: _tileKeys[i],
-                            margin: const EdgeInsets.all(2),
-                            color: _playerColors[i % _playerColors.length],
-                            child: PlayerTile(
-                              index: i,
-                              life: lives[i],
-                              isDamageMode: _damageTargetIndex == i,
-                              damageAmount: _damageAmount,
-                              onAdjustDamage: (d) =>
-                                  setState(() => _damageAmount += d),
-                              onCancel: _cancelDamage,
-                              onDone: () => _applyDamage(bloc),
-                              onLocalAdjust: (d) => bloc.add(UpdateLife(i, d)),
+                backgroundColor: Colors.black,
+                body: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final spacing = 4.0;
+                    final tiles = <Widget>[];
+
+                    // compute row structure
+                    List<List<int>> rows = [];
+                    int remaining = count;
+                    int current = 0;
+                    while (remaining > 0) {
+                      if (remaining == 1) {
+                        rows.add([current]);
+                        remaining -= 1;
+                        current += 1;
+                      } else if (remaining == 3 ||
+                          remaining == 5 ||
+                          remaining == 7) {
+                        rows.add([current, current + 1]);
+                        remaining -= 2;
+                        current += 2;
+                      } else {
+                        rows.add([current, current + 1]);
+                        remaining -= 2;
+                        current += 2;
+                      }
+                    }
+
+                    final rowCount = rows.length;
+                    final rowHeight =
+                        (constraints.maxHeight - spacing * (rowCount + 1)) /
+                        rowCount;
+
+                    double y = spacing;
+                    for (var row in rows) {
+                      final countInRow = row.length;
+                      final width =
+                          (constraints.maxWidth - spacing * (countInRow + 1)) /
+                          countInRow;
+                      double x = spacing;
+                      for (var index in row) {
+                        tiles.add(
+                          Positioned(
+                            left: x,
+                            top: y,
+                            width: width,
+                            height: rowHeight,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onPanStart: (d) =>
+                                  _startDrag(index, d.globalPosition),
+                              onPanUpdate: (d) => _updateDrag(d.globalPosition),
+                              onPanEnd: (_) {
+                                if (_dragCurrent != null)
+                                  _endDrag(_dragCurrent!);
+                              },
+                              child: Container(
+                                key: _tileKeys[index],
+                                margin: EdgeInsets.zero,
+                                color:
+                                    _playerColors[index % _playerColors.length],
+                                child: Transform.rotate(
+                                  angle: _getPlayerRotateAngle(row, index),
+                                  child: PlayerTile(
+                                    index: index,
+                                    life: lives[index],
+                                    isDamageMode: _damageTargetIndex == index,
+                                    damageAmount: _damageAmount,
+                                    onAdjustDamage: (d) =>
+                                        setState(() => _damageAmount += d),
+                                    onCancel: _cancelDamage,
+                                    onDone: () => _applyDamage(bloc),
+                                    onLocalAdjust: (d) =>
+                                        bloc.add(UpdateLife(index, d)),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         );
-                      },
-                    ),
+                        x += width + spacing;
+                      }
+                      y += rowHeight + spacing;
+                    }
 
-                    if (_isDragging &&
-                        _dragStart != null &&
-                        _dragCurrent != null)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: CustomPaint(
-                            painter: _ArrowPainter(
-                              start: _dragStart!,
-                              end: _dragCurrent!,
-                              curveUp: true,
+                    return Stack(
+                      children: [
+                        ...tiles,
+                        if (_isDragging &&
+                            _dragStart != null &&
+                            _dragCurrent != null)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: CustomPaint(
+                                painter: _ArrowPainter(
+                                  start: _dragStart!,
+                                  end: _dragCurrent!,
+                                  curveUp: true,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               );
             },
@@ -289,7 +348,7 @@ class _ArrowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
+      ..color = Colors.white
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -323,7 +382,7 @@ class _ArrowPainter extends CustomPainter {
       ..lineTo(p1.dx, p1.dy)
       ..lineTo(p2.dx, p2.dy)
       ..close();
-    canvas.drawPath(arrow, Paint()..color = Colors.black);
+    canvas.drawPath(arrow, Paint()..color = Colors.white);
   }
 
   @override
