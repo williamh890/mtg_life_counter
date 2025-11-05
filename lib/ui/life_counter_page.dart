@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/life_bloc.dart';
+import './player_tile.dart';
 
 class LifeCounterPage extends StatefulWidget {
   final int playerCount;
@@ -112,7 +113,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     if (isLeftTile) {
       return pi / 2;
     } else {
-      return - pi / 2;
+      return -pi / 2;
     }
   }
 
@@ -124,8 +125,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       child: Builder(
         builder: (context) {
           final bloc = context.read<LifeBloc>();
-          return BlocBuilder<LifeBloc, List<int>>(
-            builder: (context, lives) {
+          return BlocBuilder<LifeBloc, LifeState>(
+            builder: (context, state) {
+              final lives = state.lives;
+              final dead = state.dead;
               return Scaffold(
                 backgroundColor: Colors.black,
                 body: LayoutBuilder(
@@ -193,6 +196,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                                   child: PlayerTile(
                                     index: index,
                                     life: lives[index],
+                                    isDead: dead[index],
                                     isDamageMode: _damageTargetIndex == index,
                                     damageAmount: _damageAmount,
                                     onAdjustDamage: (d) =>
@@ -238,99 +242,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           );
         },
       ),
-    );
-  }
-}
-
-class PlayerTile extends StatelessWidget {
-  final int index;
-  final int life;
-  final bool isDamageMode;
-  final int damageAmount;
-  final void Function(int delta) onLocalAdjust;
-  final void Function(int delta)? onAdjustDamage;
-  final VoidCallback? onCancel;
-  final VoidCallback? onDone;
-
-  const PlayerTile({
-    super.key,
-    required this.index,
-    required this.life,
-    required this.isDamageMode,
-    required this.damageAmount,
-    required this.onLocalAdjust,
-    this.onAdjustDamage,
-    this.onCancel,
-    this.onDone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: isDamageMode
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Select Damage',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => onAdjustDamage?.call(-1),
-                    ),
-                    Text(
-                      '$damageAmount',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => onAdjustDamage?.call(1),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      onPressed: onCancel,
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: onDone,
-                      child: const Text('Done'),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Player ${index + 1}',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '$life',
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
     );
   }
 }

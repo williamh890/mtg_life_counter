@@ -1,87 +1,114 @@
+// lib/ui/life_counter_page.dart
 import 'package:flutter/material.dart';
-import '../blocs/life_bloc.dart';
 
 class PlayerTile extends StatelessWidget {
-  final int playerIndex;
+  final int index;
   final int life;
-  final TextEditingController adjustController;
-  final Color backgroundColor;
-  final LifeBloc bloc; // explicitly passed
+  final bool isDead;
+  final bool isDamageMode;
+  final int damageAmount;
+  final void Function(int delta) onLocalAdjust;
+  final void Function(int delta)? onAdjustDamage;
+  final VoidCallback? onCancel;
+  final VoidCallback? onDone;
 
   const PlayerTile({
     super.key,
-    required this.playerIndex,
+    required this.index,
     required this.life,
-    required this.adjustController,
-    required this.backgroundColor,
-    required this.bloc,
+    required this.isDead,
+    required this.isDamageMode,
+    required this.damageAmount,
+    required this.onLocalAdjust,
+    this.onAdjustDamage,
+    this.onCancel,
+    this.onDone,
   });
 
   @override
   Widget build(BuildContext context) {
-    final int amt = int.tryParse(adjustController.text) ?? 1;
+    if (isDead) {
+      return Container(
+        color: Colors.grey.shade800.withValues(alpha: .7),
+        child: const Center(
+          child: Text(
+            'DEAD',
+            style: TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.bold,
+              color: Colors.redAccent,
+            ),
+          ),
+        ),
+      );
+    }
 
-    return DragTarget<int>(
-      builder: (context, candidateData, rejectedData) {
-        return Draggable<int>(
-          data: playerIndex,
-          feedback: Material(
-            child: PlayerTile(
-              playerIndex: playerIndex,
-              life: life,
-              adjustController: adjustController,
-              backgroundColor: backgroundColor.withAlpha((0.8 * 255).toInt()),
-              bloc: bloc, // pass bloc to feedback as well
-            ),
-          ),
-          childWhenDragging: Container(
-            color: Colors.grey.shade300,
-            child: const Center(
-              child: Text('Dragging...', style: TextStyle(fontSize: 20)),
-            ),
-          ),
-          child: Container(
-            color: backgroundColor,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Player ${playerIndex + 1}',
+    // existing build logic for alive players
+    return Center(
+      child: isDamageMode
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Select Damage',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () => onAdjustDamage?.call(-1),
+                    ),
+                    Text(
+                      '$damageAmount',
                       style: const TextStyle(
-                          fontSize: 22, fontWeight: FontWeight.bold)),
-                  Text('$life',
-                      style: const TextStyle(
-                          fontSize: 48, fontWeight: FontWeight.bold)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        iconSize: 36,
-                        icon: const Icon(Icons.remove),
-                        onPressed: () => bloc.add(UpdateLife(playerIndex, -amt)),
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
                       ),
-                      IconButton(
-                        iconSize: 36,
-                        icon: const Icon(Icons.add),
-                        onPressed: () => bloc.add(UpdateLife(playerIndex, amt)),
-                      ),
-                    ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => onAdjustDamage?.call(1),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: onCancel,
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: onDone,
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Player ${index + 1}',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$life',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ),
-        );
-      },
-      onWillAcceptWithDetails: (details) {
-        return details.data != playerIndex;
-      },
-      onAcceptWithDetails: (details) {
-        final fromIndex = details.data;
-        final amt = int.tryParse(adjustController.text) ?? 1;
-        bloc.add(UpdateLife(fromIndex, -amt));
-        bloc.add(UpdateLife(playerIndex, amt));
-      },
     );
   }
 }
