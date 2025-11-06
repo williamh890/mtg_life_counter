@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'life_counter_page.dart';
+import '../blocs/players_bloc.dart';
+
 
 class PlayerSetupPage extends StatelessWidget {
   const PlayerSetupPage({super.key});
@@ -33,8 +36,11 @@ class PlayerSetupPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => LifeCounterPage(playerCount: count),
+                        builder: (_) => BlocProvider(
+                          create: (_) => PlayersBloc(playerCount: count),
+                          child: LifeCounterPage(playerCount: count),
                       ),
+                    )
                     );
                   },
                   child: Text('$count Players'),

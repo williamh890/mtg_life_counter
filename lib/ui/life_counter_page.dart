@@ -93,28 +93,14 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   void _cancelDamage() => setState(() => _damageTargetIndex = null);
 
   void _applyDamage(PlayersBloc bloc, DamageMode damageMode) {
-    if (_damageTargetIndex == null) return;
-    final target = _damageTargetIndex!;
-    PlayerEvent event;
-    if (damageMode == DamageMode.damage) {
-      event = DamagePlayer(target, _damageAmount);
-    } else if (damageMode == DamageMode.healing) {
-      event = HealPlayer(target, _damageAmount);
-    } else {
-      event = DamagePlayer(target, _damageAmount);
-    }
-
-    bloc.add(event);
     setState(() => _damageTargetIndex = null);
   }
 
   double _getPlayerRotateAngle(List<int> row, int index) {
-    // Odd-count rows (1 player wide) stay upright
     if (row.length == 1) {
       return 0;
     }
 
-    // For 2-player rows: left rotated 180°, right stays normal
     final isLeftTile = row.indexOf(index) == 0;
     if (isLeftTile) {
       return pi / 2;
@@ -125,127 +111,119 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final count = widget.playerCount;
-    return BlocProvider(
-      create: (_) => PlayersBloc(playerCount: count),
-      child: Builder(
-        builder: (context) {
-          final bloc = context.read<PlayersBloc>();
-          return BlocBuilder<PlayersBloc, PlayersState>(
-            builder: (context, state) {
-              final players = state.players;
-              return Scaffold(
-                backgroundColor: Colors.black,
-                body: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final spacing = 4.0;
-                    final tiles = <Widget>[];
+    final bloc = context.read<PlayersBloc>();
+    return BlocBuilder<PlayersBloc, PlayersState>(
+      builder: (context, state) {
+        final players = state.players;
+        return Scaffold(
+          backgroundColor: Colors.black,
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final spacing = 4.0;
+              final tiles = <Widget>[];
 
-                    // compute row structure
-                    List<List<int>> rows = [];
-                    int remaining = count;
-                    int current = 0;
-                    while (remaining > 0) {
-                      if (remaining == 1) {
-                        rows.add([current]);
-                        remaining -= 1;
-                        current += 1;
-                      } else if (remaining == 3 ||
-                          remaining == 5 ||
-                          remaining == 7) {
-                        rows.add([current, current + 1]);
-                        remaining -= 2;
-                        current += 2;
-                      } else {
-                        rows.add([current, current + 1]);
-                        remaining -= 2;
-                        current += 2;
-                      }
-                    }
+              // compute row structure
+              List<List<int>> rows = [];
+              int remaining = players.length;
+              int current = 0;
+              while (remaining > 0) {
+                if (remaining == 1) {
+                  rows.add([current]);
+                  remaining -= 1;
+                  current += 1;
+                } else if (remaining == 3 ||
+                    remaining == 5 ||
+                    remaining == 7) {
+                  rows.add([current, current + 1]);
+                  remaining -= 2;
+                  current += 2;
+                } else {
+                  rows.add([current, current + 1]);
+                  remaining -= 2;
+                  current += 2;
+                }
+              }
 
-                    final rowCount = rows.length;
-                    final rowHeight =
-                        (constraints.maxHeight - spacing * (rowCount + 1)) /
-                        rowCount;
+              final rowCount = rows.length;
+              final rowHeight =
+                  (constraints.maxHeight - spacing * (rowCount + 1)) /
+                  rowCount;
 
-                    double y = spacing;
-                    for (var row in rows) {
-                      final countInRow = row.length;
-                      final width =
-                          (constraints.maxWidth - spacing * (countInRow + 1)) /
-                          countInRow;
-                      double x = spacing;
-                      for (var index in row) {
-                        Player player = players[index]!;
-                        tiles.add(
-                          Positioned(
-                            left: x,
-                            top: y,
-                            width: width,
-                            height: rowHeight,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onPanStart: (d) =>
-                                  _startDrag(index, d.globalPosition),
-                              onPanUpdate: (d) => _updateDrag(d.globalPosition),
-                              onPanEnd: (_) {
-                                if (_dragCurrent != null) {
-                                  _endDrag(_dragCurrent!);
-                                }
-                              },
-                              child: Container(
-                                key: _tileKeys[index],
-                                margin: EdgeInsets.zero,
-                                color:
-                                    _playerColors[index % _playerColors.length],
-                                child: Transform.rotate(
-                                  angle: _getPlayerRotateAngle(row, index),
-                                  child: PlayerTile(
-                                    player: player,
-                                    isDamageMode: _damageTargetIndex == index,
-                                    damageAmount: _damageAmount,
-                                    onAdjustDamage: (d) =>
-                                        setState(() => _damageAmount += d),
-                                    onCancel: _cancelDamage,
-                                    onDone: (damageMode) =>
-                                        _applyDamage(bloc, damageMode),
-                                  ),
-                                ),
-                              ),
+              double y = spacing;
+              for (var row in rows) {
+                final countInRow = row.length;
+                final width =
+                    (constraints.maxWidth - spacing * (countInRow + 1)) /
+                    countInRow;
+                double x = spacing;
+                for (var index in row) {
+                  Player player = players[index]!;
+                  tiles.add(
+                    Positioned(
+                      left: x,
+                      top: y,
+                      width: width,
+                      height: rowHeight,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (d) =>
+                            _startDrag(index, d.globalPosition),
+                        onPanUpdate: (d) => _updateDrag(d.globalPosition),
+                        onPanEnd: (_) {
+                          if (_dragCurrent != null) {
+                            _endDrag(_dragCurrent!);
+                          }
+                        },
+                        child: Container(
+                          key: _tileKeys[index],
+                          margin: EdgeInsets.zero,
+                          color:
+                              _playerColors[index % _playerColors.length],
+                          child: Transform.rotate(
+                            angle: _getPlayerRotateAngle(row, index),
+                            child: PlayerTile(
+                              player: player,
+                              targetId: _damageTargetIndex,
+                              isDamageMode: _damageTargetIndex == index,
+                              onAdjustDamage: (d) =>
+                                  setState(() => _damageAmount += d),
+                              onCancel: _cancelDamage,
+                              onDone: (damageMode) =>
+                                  _applyDamage(bloc, damageMode),
                             ),
                           ),
-                        );
-                        x += width + spacing;
-                      }
-                      y += rowHeight + spacing;
-                    }
+                        ),
+                      ),
+                    ),
+                  );
+                  x += width + spacing;
+                }
+                y += rowHeight + spacing;
+              }
 
-                    return Stack(
-                      children: [
-                        ...tiles,
-                        if (_isDragging &&
-                            _dragStart != null &&
-                            _dragCurrent != null)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: CustomPaint(
-                                painter: _ArrowPainter(
-                                  start: _dragStart!,
-                                  end: _dragCurrent!,
-                                  curveUp: true,
-                                ),
-                              ),
-                            ),
+              return Stack(
+                children: [
+                  ...tiles,
+                  if (_isDragging &&
+                      _dragStart != null &&
+                      _dragCurrent != null)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _ArrowPainter(
+                            start: _dragStart!,
+                            end: _dragCurrent!,
+                            curveUp: true,
                           ),
-                      ],
-                    );
-                  },
-                ),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

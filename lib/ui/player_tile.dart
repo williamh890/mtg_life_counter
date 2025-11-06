@@ -1,11 +1,13 @@
 // lib/ui/life_counter_page.dart
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/players_bloc.dart';
 
 class PlayerTile extends StatefulWidget {
   final Player player;
+  final int? targetId;
   final bool isDamageMode;
-  final int damageAmount;
 
   final void Function(int delta) onAdjustDamage;
   final VoidCallback onCancel;
@@ -14,8 +16,8 @@ class PlayerTile extends StatefulWidget {
   const PlayerTile({
     super.key,
     required this.player,
+    this.targetId,
     required this.isDamageMode,
-    required this.damageAmount,
     required this.onAdjustDamage,
     required this.onCancel,
     required this.onDone,
@@ -27,9 +29,24 @@ class PlayerTile extends StatefulWidget {
 
 class _PlayerTileState extends State<PlayerTile> {
   DamageMode _selectedDamageMode = DamageMode.damage;
+  int _damageAmount = 0;
+
+  void _increaseDamage() {
+    setState(() {
+      _damageAmount += 1;
+    });
+  }
+
+  void _decreaseDamage() {
+    setState(() {
+      _damageAmount = math.max(0, _damageAmount - 1);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bloc = context.read<PlayersBloc>();
+
     if (widget.player.isDead) {
       return Container(
         color: Colors.grey.shade800.withValues(alpha: .7),
@@ -85,10 +102,10 @@ class _PlayerTileState extends State<PlayerTile> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.remove),
-                  onPressed: () => widget.onAdjustDamage.call(-1),
+                  onPressed: () => _decreaseDamage(),
                 ),
                 Text(
-                  '${widget.damageAmount}',
+                  '$_damageAmount',
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -96,7 +113,7 @@ class _PlayerTileState extends State<PlayerTile> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: () => widget.onAdjustDamage.call(1),
+                  onPressed: () => _increaseDamage(),
                 ),
               ],
             ),
@@ -104,11 +121,38 @@ class _PlayerTileState extends State<PlayerTile> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton(
-                  onPressed: widget.onCancel,
+                  onPressed: () {
+                    setState(() {
+                      _damageAmount = 0;
+                      _selectedDamageMode = DamageMode.damage;
+                    });
+                    widget.onCancel();
+                  },
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () => widget.onDone(_selectedDamageMode),
+                  onPressed: () {
+                    if (widget.targetId == null) {
+                      return;
+                    }
+                    final target = widget.targetId!;
+
+                    PlayerEvent event;
+                    if (_selectedDamageMode == DamageMode.damage) {
+                      event = DamagePlayer(target, _damageAmount);
+                    } else if (_selectedDamageMode == DamageMode.healing) {
+                      event = HealPlayer(target, _damageAmount);
+                    } else {
+                      event = DamagePlayer(target, _damageAmount);
+                    }
+
+                    bloc.add(event);
+                    setState(() {
+                      _damageAmount = 0;
+                      _selectedDamageMode = DamageMode.damage;
+                    });
+                    widget.onDone(_selectedDamageMode);
+                  },
                   child: const Text('Done'),
                 ),
               ],
