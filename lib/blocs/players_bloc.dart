@@ -35,12 +35,6 @@ class Player {
 
 abstract class PlayerEvent {}
 
-class SetPlayers extends PlayerEvent {
-  final int numPlayers;
-
-  SetPlayers(this.numPlayers);
-}
-
 class DamagePlayer extends PlayerEvent {
   final int playerId;
   final int delta;
@@ -72,13 +66,6 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           }).asMap(),
         ),
       ) {
-    on<SetPlayers>((event, emit) {
-      final players = List.generate(event.numPlayers, (index) {
-        return Player(id: index, name: "Player ${index + 1}", life: 40);
-      }).asMap();
-
-      emit(state.copyWith(players: players));
-    });
     on<DamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players);
       Player player = players[event.playerId]!;
