@@ -92,10 +92,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
   void _cancelDamage() => setState(() => _damageTargetIndex = null);
 
-  void _applyDamage(LifeBloc bloc) {
+  void _applyDamage(LifeBloc bloc, DamageMode damageMode) {
     if (_damageTargetIndex == null) return;
     final target = _damageTargetIndex!;
-    bloc.add(UpdateLife(target, -_damageAmount));
+    bloc.add(UpdateLife(target, _damageAmount, damageMode));
     setState(() => _damageTargetIndex = null);
   }
 
@@ -198,9 +198,8 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                                     onAdjustDamage: (d) =>
                                         setState(() => _damageAmount += d),
                                     onCancel: _cancelDamage,
-                                    onDone: () => _applyDamage(bloc),
-                                    onLocalAdjust: (d) =>
-                                        bloc.add(UpdateLife(index, d)),
+                                    onDone: (damageMode) =>
+                                        _applyDamage(bloc, damageMode),
                                   ),
                                 ),
                               ),

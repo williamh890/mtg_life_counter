@@ -1,6 +1,16 @@
 // blocs/life_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+enum DamageMode {
+  damage("Damage"),
+  healing("Healing"),
+  lifelink("Lifelinke");
+
+  final String label;
+
+  const DamageMode(this.label);
+}
+
 class Player {
   final int id;
   String name;
@@ -29,7 +39,9 @@ abstract class LifeEvent {}
 class UpdateLife extends LifeEvent {
   final int playerId;
   final int delta;
-  UpdateLife(this.playerId, this.delta);
+  final DamageMode damageMode;
+
+  UpdateLife(this.playerId, this.delta, this.damageMode);
 }
 
 class LifeState {
@@ -55,7 +67,15 @@ class LifeBloc extends Bloc<LifeEvent, LifeState> {
 
       if (player.isDead) return; // cannot damage dead players
 
-      players[player.id] = player.copyWith(life: player.life + event.delta);
+      int newLifeTotal = player.life;
+      if (event.damageMode == DamageMode.damage) {
+        newLifeTotal -= event.delta;
+      } else if (event.damageMode == DamageMode.healing) {
+        newLifeTotal += event.delta;
+      }
+
+      bool isDead = newLifeTotal <= 0;
+      players[player.id] = player.copyWith(life: newLifeTotal, isDead: isDead);
 
       emit(state.copyWith(players: players));
     });
