@@ -1,10 +1,9 @@
 // lib/ui/life_counter_page.dart
 import 'package:flutter/material.dart';
+import '../blocs/life_bloc.dart';
 
 class PlayerTile extends StatelessWidget {
-  final int index;
-  final int life;
-  final bool isDead;
+  final Player player;
   final bool isDamageMode;
   final int damageAmount;
   final void Function(int delta) onLocalAdjust;
@@ -14,9 +13,7 @@ class PlayerTile extends StatelessWidget {
 
   const PlayerTile({
     super.key,
-    required this.index,
-    required this.life,
-    required this.isDead,
+    required this.player,
     required this.isDamageMode,
     required this.damageAmount,
     required this.onLocalAdjust,
@@ -27,7 +24,7 @@ class PlayerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isDead) {
+    if (player.isDead) {
       return Container(
         color: Colors.grey.shade800.withValues(alpha: .7),
         child: const Center(
@@ -41,74 +38,63 @@ class PlayerTile extends StatelessWidget {
           ),
         ),
       );
-    }
-
-    // existing build logic for alive players
-    return Center(
-      child: isDamageMode
-          ? Column(
+    } else if (isDamageMode) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Select Damage',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Select Damage',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: () => onAdjustDamage?.call(-1),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => onAdjustDamage?.call(-1),
-                    ),
-                    Text(
-                      '$damageAmount',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => onAdjustDamage?.call(1),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      onPressed: onCancel,
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: onDone,
-                      child: const Text('Done'),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
                 Text(
-                  'Player ${index + 1}',
+                  '$damageAmount',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '$life',
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => onAdjustDamage?.call(1),
                 ),
               ],
             ),
-    );
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(onPressed: onCancel, child: const Text('Cancel')),
+                ElevatedButton(onPressed: onDone, child: const Text('Done')),
+              ],
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              player.name,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$player.life',
+              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

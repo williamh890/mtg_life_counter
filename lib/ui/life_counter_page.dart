@@ -28,7 +28,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   final List<GlobalKey> _tileKeys = [];
   Offset? _dragStart;
   Offset? _dragCurrent;
-  int? _dragSourceIndex;
   bool _isDragging = false;
 
   int? _damageTargetIndex;
@@ -62,7 +61,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   void _startDrag(int source, Offset touchGlobal) {
     if (_damageTargetIndex == source) return; // disable while in damage mode
     setState(() {
-      _dragSourceIndex = source;
       _dragStart = touchGlobal;
       _dragCurrent = touchGlobal;
       _isDragging = true;
@@ -82,7 +80,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       _isDragging = false;
       _dragCurrent = null;
       _dragStart = null;
-      _dragSourceIndex = null;
     });
 
     if (target != null) {
@@ -195,9 +192,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                                 child: Transform.rotate(
                                   angle: _getPlayerRotateAngle(row, index),
                                   child: PlayerTile(
-                                    index: index,
-                                    life: player.life,
-                                    isDead: player.isDead,
+                                    player: player,
                                     isDamageMode: _damageTargetIndex == index,
                                     damageAmount: _damageAmount,
                                     onAdjustDamage: (d) =>
