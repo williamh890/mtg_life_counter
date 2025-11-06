@@ -127,8 +127,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           final bloc = context.read<LifeBloc>();
           return BlocBuilder<LifeBloc, LifeState>(
             builder: (context, state) {
-              final lives = state.lives;
-              final dead = state.dead;
+              final players = state.players;
               return Scaffold(
                 backgroundColor: Colors.black,
                 body: LayoutBuilder(
@@ -171,6 +170,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                           countInRow;
                       double x = spacing;
                       for (var index in row) {
+                        Player player = players[index]!;
                         tiles.add(
                           Positioned(
                             left: x,
@@ -183,8 +183,9 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                                   _startDrag(index, d.globalPosition),
                               onPanUpdate: (d) => _updateDrag(d.globalPosition),
                               onPanEnd: (_) {
-                                if (_dragCurrent != null)
+                                if (_dragCurrent != null) {
                                   _endDrag(_dragCurrent!);
+                                }
                               },
                               child: Container(
                                 key: _tileKeys[index],
@@ -195,8 +196,8 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                                   angle: _getPlayerRotateAngle(row, index),
                                   child: PlayerTile(
                                     index: index,
-                                    life: lives[index],
-                                    isDead: dead[index],
+                                    life: player.life,
+                                    isDead: player.isDead,
                                     isDamageMode: _damageTargetIndex == index,
                                     damageAmount: _damageAmount,
                                     onAdjustDamage: (d) =>

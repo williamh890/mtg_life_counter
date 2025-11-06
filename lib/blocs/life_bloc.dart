@@ -1,38 +1,63 @@
 // blocs/life_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+class Player {
+  final int id;
+  String name;
+  int life;
+  bool isDead;
+
+  Player({
+    required this.id,
+    required this.name,
+    required this.life,
+    this.isDead = false,
+  });
+
+  Player copyWith({int? id, String? name, int? life, bool? isDead}) {
+    return Player(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      life: life ?? this.life,
+      isDead: isDead ?? this.isDead,
+    );
+  }
+}
+
 abstract class LifeEvent {}
+
 class UpdateLife extends LifeEvent {
-  final int playerIndex;
+  final int playerId;
   final int delta;
-  UpdateLife(this.playerIndex, this.delta);
+  UpdateLife(this.playerId, this.delta);
 }
 
 class LifeState {
-  final List<int> lives;
-  final List<bool> dead;
-  LifeState(this.lives, this.dead);
+  final Map<int, Player> players;
+  LifeState(this.players);
 
-  LifeState copyWith({List<int>? lives, List<bool>? dead}) =>
-      LifeState(lives ?? this.lives, dead ?? this.dead);
+  LifeState copyWith({Map<int, Player>? players}) =>
+      LifeState(players ?? this.players);
 }
 
 class LifeBloc extends Bloc<LifeEvent, LifeState> {
   LifeBloc({required int playerCount})
-      : super(LifeState(List.filled(playerCount, 40), List.filled(playerCount, false))) {
+    : super(
+        LifeState(
+          List.generate(playerCount, (index) {
+            return Player(id: index, name: "Player ${index + 1}", life: 40);
+          }).asMap(),
+        ),
+      ) {
     on<UpdateLife>((event, emit) {
-      final lives = List<int>.from(state.lives);
-      final dead = List<bool>.from(state.dead);
+      final players = Map<int, Player>.from(state.players);
+      Player player = players[event.playerId]!;
 
-      if (dead[event.playerIndex]) return; // cannot damage dead players
+      if (player.isDead) return; // cannot damage dead players
 
-      lives[event.playerIndex] = (lives[event.playerIndex] + event.delta).clamp(0, 9999);
-      if (lives[event.playerIndex] <= 0) {
-        lives[event.playerIndex] = 0;
-        dead[event.playerIndex] = true;
-      }
+      players[player.id] = player.copyWith(life: player.life + event.delta);
 
-      emit(state.copyWith(lives: lives, dead: dead));
+      emit(state.copyWith(players: players));
     });
   }
 }
