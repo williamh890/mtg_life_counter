@@ -34,48 +34,57 @@ class Player {
   }
 }
 
-abstract class LifeEvent {}
+abstract class PlayerEvent {}
 
-class UpdateLife extends LifeEvent {
+class DamagePlayer extends PlayerEvent {
   final int playerId;
   final int delta;
-  final DamageMode damageMode;
 
-  UpdateLife(this.playerId, this.delta, this.damageMode);
+  DamagePlayer(this.playerId, this.delta);
 }
 
-class LifeState {
+class HealPlayer extends PlayerEvent {
+  final int playerId;
+  final int delta;
+
+  HealPlayer(this.playerId, this.delta);
+}
+
+class PlayersState {
   final Map<int, Player> players;
-  LifeState(this.players);
+  PlayersState(this.players);
 
-  LifeState copyWith({Map<int, Player>? players}) =>
-      LifeState(players ?? this.players);
+  PlayersState copyWith({Map<int, Player>? players}) =>
+      PlayersState(players ?? this.players);
 }
 
-class LifeBloc extends Bloc<LifeEvent, LifeState> {
-  LifeBloc({required int playerCount})
+class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
+  PlayersBloc({required int playerCount})
     : super(
-        LifeState(
+        PlayersState(
           List.generate(playerCount, (index) {
             return Player(id: index, name: "Player ${index + 1}", life: 40);
           }).asMap(),
         ),
       ) {
-    on<UpdateLife>((event, emit) {
+    on<DamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players);
       Player player = players[event.playerId]!;
 
-      if (player.isDead) return; // cannot damage dead players
-
-      int newLifeTotal = player.life;
-      if (event.damageMode == DamageMode.damage) {
-        newLifeTotal -= event.delta;
-      } else if (event.damageMode == DamageMode.healing) {
-        newLifeTotal += event.delta;
-      }
-
+      int newLifeTotal = player.life - event.delta;
       bool isDead = newLifeTotal <= 0;
+
       players[player.id] = player.copyWith(life: newLifeTotal, isDead: isDead);
+
+      emit(state.copyWith(players: players));
+    });
+    on<HealPlayer>((event, emit) {
+      final players = Map<int, Player>.from(state.players);
+      Player player = players[event.playerId]!;
+
+      int newLifeTotal = player.life + event.delta;
+
+      players[player.id] = player.copyWith(life: newLifeTotal);
 
       emit(state.copyWith(players: players));
     });

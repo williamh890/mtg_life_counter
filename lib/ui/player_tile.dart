@@ -1,6 +1,6 @@
 // lib/ui/life_counter_page.dart
 import 'package:flutter/material.dart';
-import '../blocs/life_bloc.dart';
+import '../blocs/players_bloc.dart';
 
 class PlayerTile extends StatefulWidget {
   final Player player;

@@ -2,7 +2,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/life_bloc.dart';
+import '../blocs/players_bloc.dart';
 import './player_tile.dart';
 
 class LifeCounterPage extends StatefulWidget {
@@ -92,10 +92,19 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
   void _cancelDamage() => setState(() => _damageTargetIndex = null);
 
-  void _applyDamage(LifeBloc bloc, DamageMode damageMode) {
+  void _applyDamage(PlayersBloc bloc, DamageMode damageMode) {
     if (_damageTargetIndex == null) return;
     final target = _damageTargetIndex!;
-    bloc.add(UpdateLife(target, _damageAmount, damageMode));
+    PlayerEvent event;
+    if (damageMode == DamageMode.damage) {
+      event = DamagePlayer(target, _damageAmount);
+    } else if (damageMode == DamageMode.healing) {
+      event = HealPlayer(target, _damageAmount);
+    } else {
+      event = DamagePlayer(target, _damageAmount);
+    }
+
+    bloc.add(event);
     setState(() => _damageTargetIndex = null);
   }
 
@@ -118,11 +127,11 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   Widget build(BuildContext context) {
     final count = widget.playerCount;
     return BlocProvider(
-      create: (_) => LifeBloc(playerCount: count),
+      create: (_) => PlayersBloc(playerCount: count),
       child: Builder(
         builder: (context) {
-          final bloc = context.read<LifeBloc>();
-          return BlocBuilder<LifeBloc, LifeState>(
+          final bloc = context.read<PlayersBloc>();
+          return BlocBuilder<PlayersBloc, PlayersState>(
             builder: (context, state) {
               final players = state.players;
               return Scaffold(
