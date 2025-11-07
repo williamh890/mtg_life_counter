@@ -68,13 +68,13 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     : super(
         PlayersState(
           List.generate(playerCount, (index) {
-            return Player(id: index, name: "Player ${index + 1}", life: 40);
+            return Player(id: index, name: "Player ${index + 1}", life: 10);
           }).asMap(),
         ),
       ) {
     on<ResetPlayers>((event, emit) {
       final players = List.generate(event.playerCount, (index) {
-        return Player(id: index, name: "Player ${index + 1}", life: 40);
+        return Player(id: index, name: "Player ${index + 1}", life: 10);
       }).asMap();
 
       emit(state.copyWith(players: players));

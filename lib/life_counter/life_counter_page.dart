@@ -2,8 +2,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../blocs/players_bloc.dart';
-import './player_tile.dart';
+import 'package:mtg_life_counter/life_counter/components/damage_select_tile.dart';
+import 'package:mtg_life_counter/life_counter/components/dead_player_tile.dart';
+import 'blocs/players_bloc.dart';
+import 'components/player_tile.dart';
 
 class LifeCounterPage extends StatefulWidget {
   const LifeCounterPage({super.key});
@@ -30,7 +32,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   bool _isDragging = false;
 
   int? _damageTargetIndex;
-  int _damageAmount = 1;
 
   @override
   void initState() {
@@ -87,7 +88,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     if (target != null) {
       setState(() {
         _damageTargetIndex = target;
-        _damageAmount = 1;
       });
     }
   }
@@ -178,16 +178,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                           color: _playerColors[index % _playerColors.length],
                           child: Transform.rotate(
                             angle: _getPlayerRotateAngle(row, index),
-                            child: PlayerTile(
-                              player: player,
-                              targetId: _damageTargetIndex,
-                              isDamageMode: _damageTargetIndex == index,
-                              onAdjustDamage: (d) =>
-                                  setState(() => _damageAmount += d),
-                              onCancel: _cancelDamage,
-                              onDone: (damageMode) =>
-                                  _applyDamage(bloc, damageMode),
-                            ),
+                            child: _getPlayerTile(player, index, bloc),
                           ),
                         ),
                       ),
@@ -220,6 +211,22 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
         );
       },
     );
+  }
+
+  Widget _getPlayerTile(Player player, int index, PlayersBloc bloc) {
+    final isDamageMode = _damageTargetIndex == index;
+
+    if (player.isDead) {
+      return DeadPlayerTile();
+    } else if (isDamageMode) {
+      return DamageSelectTile(
+        targetId: _damageTargetIndex,
+        onCancel: _cancelDamage,
+        onDone: (damageMode) => _applyDamage(bloc, damageMode),
+      );
+    } else {
+      return PlayerTile(player: player);
+    }
   }
 }
 
