@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'life_counter_page.dart';
 import '../blocs/players_bloc.dart';
-
 
 class PlayerSetupPage extends StatelessWidget {
   const PlayerSetupPage({super.key});
@@ -29,19 +27,15 @@ class PlayerSetupPage extends StatelessWidget {
                 return ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 24),
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
                     textStyle: const TextStyle(fontSize: 18),
                   ),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BlocProvider(
-                          create: (_) => PlayersBloc(playerCount: count),
-                          child: LifeCounterPage(playerCount: count),
-                      ),
-                    )
-                    );
+                    final bloc = context.read<PlayersBloc>();
+                    bloc.add(ResetPlayers(count));
+                    Navigator.pushNamed(context, '/life_counter');
                   },
                   child: Text('$count Players'),
                 );

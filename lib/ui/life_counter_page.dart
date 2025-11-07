@@ -6,8 +6,7 @@ import '../blocs/players_bloc.dart';
 import './player_tile.dart';
 
 class LifeCounterPage extends StatefulWidget {
-  final int playerCount;
-  const LifeCounterPage({super.key, required this.playerCount});
+  const LifeCounterPage({super.key});
 
   @override
   State<LifeCounterPage> createState() => _LifeCounterPageState();
@@ -36,7 +35,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   @override
   void initState() {
     super.initState();
-    _tileKeys.addAll(List.generate(widget.playerCount, (_) => GlobalKey()));
+    final playersBloc = context.read<PlayersBloc>();
+    final playerCount = playersBloc.state.players.length;
+
+    _tileKeys.addAll(List.generate(playerCount, (_) => GlobalKey()));
   }
 
   Rect? _getTileRect(int index) {
@@ -131,9 +133,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                   rows.add([current]);
                   remaining -= 1;
                   current += 1;
-                } else if (remaining == 3 ||
-                    remaining == 5 ||
-                    remaining == 7) {
+                } else if (remaining == 3 || remaining == 5 || remaining == 7) {
                   rows.add([current, current + 1]);
                   remaining -= 2;
                   current += 2;
@@ -146,8 +146,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
               final rowCount = rows.length;
               final rowHeight =
-                  (constraints.maxHeight - spacing * (rowCount + 1)) /
-                  rowCount;
+                  (constraints.maxHeight - spacing * (rowCount + 1)) / rowCount;
 
               double y = spacing;
               for (var row in rows) {
@@ -166,8 +165,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                       height: rowHeight,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onPanStart: (d) =>
-                            _startDrag(index, d.globalPosition),
+                        onPanStart: (d) => _startDrag(index, d.globalPosition),
                         onPanUpdate: (d) => _updateDrag(d.globalPosition),
                         onPanEnd: (_) {
                           if (_dragCurrent != null) {
@@ -177,8 +175,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                         child: Container(
                           key: _tileKeys[index],
                           margin: EdgeInsets.zero,
-                          color:
-                              _playerColors[index % _playerColors.length],
+                          color: _playerColors[index % _playerColors.length],
                           child: Transform.rotate(
                             angle: _getPlayerRotateAngle(row, index),
                             child: PlayerTile(
@@ -204,9 +201,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
               return Stack(
                 children: [
                   ...tiles,
-                  if (_isDragging &&
-                      _dragStart != null &&
-                      _dragCurrent != null)
+                  if (_isDragging && _dragStart != null && _dragCurrent != null)
                     Positioned.fill(
                       child: IgnorePointer(
                         child: CustomPaint(
