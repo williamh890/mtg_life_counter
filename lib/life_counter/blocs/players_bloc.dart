@@ -116,8 +116,8 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     });
   }
 
-  static Map<int, Player> _generatePlayers(int playerCount) =>
-      List.generate(playerCount, (index) {
-        return Player(id: index, name: "Player ${index + 1}", life: 10);
-      }).asMap();
+  static Map<int, Player> _generatePlayers(int playerCount) => List.generate(
+    playerCount,
+    (i) => Player(id: i, name: 'Player ${i + 1}', life: 40),
+  ).fold<Map<int, Player>>({}, (map, player) => map..[player.id] = player);
 }

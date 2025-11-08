@@ -109,7 +109,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<PlayersBloc>();
     return BlocBuilder<PlayersBloc, PlayersState>(
       builder: (context, state) {
         final players = state.players;
@@ -121,24 +120,8 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
               final tiles = <Widget>[];
 
               // compute row structure
-              List<List<int>> rows = [];
-              int remaining = players.length;
-              int current = 0;
-              while (remaining > 0) {
-                if (remaining == 1) {
-                  rows.add([current]);
-                  remaining -= 1;
-                  current += 1;
-                } else if (remaining == 3 || remaining == 5 || remaining == 7) {
-                  rows.add([current, current + 1]);
-                  remaining -= 2;
-                  current += 2;
-                } else {
-                  rows.add([current, current + 1]);
-                  remaining -= 2;
-                  current += 2;
-                }
-              }
+              final playerIds = state.players.keys.toList();
+              List<List<int>> rows = _getLayoutRows(playerIds);
 
               final rowCount = rows.length;
               final rowHeight =
@@ -174,7 +157,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                           color: _playerColors[index % _playerColors.length],
                           child: Transform.rotate(
                             angle: _getPlayerRotateAngle(row, index),
-                            child: _getPlayerTile(player, index, bloc),
+                            child: _getPlayerTile(player, index),
                           ),
                         ),
                       ),
@@ -209,7 +192,27 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     );
   }
 
-  Widget _getPlayerTile(Player player, int index, PlayersBloc bloc) {
+  List<List<int>> _getLayoutRows(List<int> playerIds) {
+    List<List<int>> rows = [];
+    List<int> row = [];
+
+    for (var playerId in playerIds) {
+      row.add(playerId);
+
+      if (row.length >= 2) {
+        rows.add(row);
+        row = [];
+      }
+    }
+
+    if (row.isNotEmpty) {
+      rows.add(row);
+    }
+
+    return rows;
+  }
+
+  Widget _getPlayerTile(Player player, int index) {
     final isDamageMode = _damageTargetIndex == index;
 
     if (player.isDead) {
