@@ -110,32 +110,7 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  if (widget.targetId == null) {
-                    return;
-                  }
-                  final target = widget.targetId!;
-                  final source = widget.sourceId!;
-
-                  PlayerEvent event;
-                  if (_selectedDamageMode == DamageMode.damage) {
-                    event = DamagePlayer(target, _damageAmount);
-                  } else if (_selectedDamageMode == DamageMode.healing) {
-                    event = HealPlayer(target, _damageAmount);
-                  } else if (_selectedDamageMode == DamageMode.lifelink) {
-                    event = LifelinkDamagePlayer(source, target, _damageAmount);
-                  } else {
-                    event = DamagePlayer(target, _damageAmount);
-                  }
-
-                  final bloc = context.read<PlayersBloc>();
-                  bloc.add(event);
-                  setState(() {
-                    _damageAmount = 0;
-                    _selectedDamageMode = DamageMode.damage;
-                  });
-                  widget.onDone();
-                },
+                onPressed: _applyDamage,
                 child: const Text('Done'),
               ),
             ],
@@ -143,5 +118,33 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
         ],
       ),
     );
+  }
+
+  _applyDamage() {
+    final target = widget.targetId;
+    final source = widget.sourceId;
+
+    if (target == null) {
+      return;
+    }
+
+    final event = switch (_selectedDamageMode) {
+      DamageMode.damage => DamagePlayer(target, _damageAmount),
+      DamageMode.healing => HealPlayer(target, _damageAmount),
+      DamageMode.lifelink => LifelinkDamagePlayer(
+        source!,
+        target,
+        _damageAmount,
+      ),
+    };
+
+    context.read<PlayersBloc>().add(event);
+
+    setState(() {
+      _damageAmount = 0;
+      _selectedDamageMode = DamageMode.damage;
+    });
+
+    widget.onDone();
   }
 }
