@@ -4,7 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum DamageMode {
   damage("Damage"),
-  healing("Healing");
+  healing("Healing"),
+  lifelink("Lifelink");
 
   final String label;
 

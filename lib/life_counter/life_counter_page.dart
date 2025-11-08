@@ -32,6 +32,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   bool _isDragging = false;
 
   int? _damageTargetIndex;
+  int? _damageSourceIndex;
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       _dragCurrent = touchGlobal;
       _isDragging = true;
       _damageTargetIndex = null;
+      _damageSourceIndex = source;
     });
   }
 
@@ -215,18 +217,25 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     } else if (isDamageMode) {
       return DamageSelectTile(
         targetId: _damageTargetIndex,
+        sourceId: _damageSourceIndex,
         onCancel: _cancelDamage,
-        onDone: (damageMode) => _applyDamage(bloc, damageMode),
+        onDone: _applyDamage,
       );
     } else {
       return PlayerTile(player: player);
     }
   }
 
-  void _cancelDamage() => setState(() => _damageTargetIndex = null);
+  void _cancelDamage() => setState(() {
+    _damageTargetIndex = null;
+    _damageSourceIndex = null;
+  });
 
-  void _applyDamage(PlayersBloc bloc, DamageMode damageMode) {
-    setState(() => _damageTargetIndex = null);
+  void _applyDamage() {
+    setState(() {
+      _damageTargetIndex = null;
+      _damageSourceIndex = null;
+    });
   }
 }
 

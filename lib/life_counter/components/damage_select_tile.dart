@@ -6,13 +6,15 @@ import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 
 class DamageSelectTile extends StatefulWidget {
   final int? targetId;
+  final int? sourceId;
 
   final VoidCallback onCancel;
-  final void Function(DamageMode) onDone;
+  final VoidCallback onDone;
 
   const DamageSelectTile({
     super.key,
     this.targetId,
+    this.sourceId,
     required this.onCancel,
     required this.onDone,
   });
@@ -113,12 +115,15 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                     return;
                   }
                   final target = widget.targetId!;
+                  final source = widget.sourceId!;
 
                   PlayerEvent event;
                   if (_selectedDamageMode == DamageMode.damage) {
                     event = DamagePlayer(target, _damageAmount);
                   } else if (_selectedDamageMode == DamageMode.healing) {
                     event = HealPlayer(target, _damageAmount);
+                  } else if (_selectedDamageMode == DamageMode.lifelink) {
+                    event = LifelinkDamagePlayer(source, target, _damageAmount);
                   } else {
                     event = DamagePlayer(target, _damageAmount);
                   }
@@ -129,7 +134,7 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                     _damageAmount = 0;
                     _selectedDamageMode = DamageMode.damage;
                   });
-                  widget.onDone(_selectedDamageMode);
+                  widget.onDone();
                 },
                 child: const Text('Done'),
               ),
