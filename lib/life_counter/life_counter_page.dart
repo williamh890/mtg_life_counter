@@ -92,12 +92,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     }
   }
 
-  void _cancelDamage() => setState(() => _damageTargetIndex = null);
-
-  void _applyDamage(PlayersBloc bloc, DamageMode damageMode) {
-    setState(() => _damageTargetIndex = null);
-  }
-
   double _getPlayerRotateAngle(List<int> row, int index) {
     if (row.length == 1) {
       return 0;
@@ -227,6 +221,12 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     } else {
       return PlayerTile(player: player);
     }
+  }
+
+  void _cancelDamage() => setState(() => _damageTargetIndex = null);
+
+  void _applyDamage(PlayersBloc bloc, DamageMode damageMode) {
+    setState(() => _damageTargetIndex = null);
   }
 }
 

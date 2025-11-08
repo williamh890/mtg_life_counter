@@ -1,4 +1,5 @@
 // blocs/life_bloc.dart
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum DamageMode {
@@ -42,17 +43,25 @@ class ResetPlayers extends PlayerEvent {
 }
 
 class DamagePlayer extends PlayerEvent {
-  final int playerId;
+  final int targetId;
   final int delta;
 
-  DamagePlayer(this.playerId, this.delta);
+  DamagePlayer(this.targetId, this.delta);
 }
 
 class HealPlayer extends PlayerEvent {
-  final int playerId;
+  final int targetId;
   final int delta;
 
-  HealPlayer(this.playerId, this.delta);
+  HealPlayer(this.targetId, this.delta);
+}
+
+class LifelinkDamagePlayer extends PlayerEvent {
+  final int attackerId;
+  final int targetId;
+  final int delta;
+
+  LifelinkDamagePlayer(this.attackerId, this.targetId, this.delta);
 }
 
 class PlayersState {
@@ -65,40 +74,49 @@ class PlayersState {
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
   PlayersBloc({required int playerCount})
-    : super(
-        PlayersState(
-          List.generate(playerCount, (index) {
-            return Player(id: index, name: "Player ${index + 1}", life: 10);
-          }).asMap(),
-        ),
-      ) {
+    : super(PlayersState(_generatePlayers(playerCount))) {
     on<ResetPlayers>((event, emit) {
-      final players = List.generate(event.playerCount, (index) {
-        return Player(id: index, name: "Player ${index + 1}", life: 10);
-      }).asMap();
+      final players = _generatePlayers(event.playerCount);
 
       emit(state.copyWith(players: players));
     });
     on<DamagePlayer>((event, emit) {
-      final players = Map<int, Player>.from(state.players);
-      Player player = players[event.playerId]!;
-
-      int newLifeTotal = player.life - event.delta;
-      bool isDead = newLifeTotal <= 0;
-
-      players[player.id] = player.copyWith(life: newLifeTotal, isDead: isDead);
+      final players = Map<int, Player>.from(state.players)
+        ..update(event.targetId, (player) {
+          final life = player.life - event.delta;
+          final isDead = life <= 0;
+          return player.copyWith(life: life, isDead: isDead);
+        });
 
       emit(state.copyWith(players: players));
     });
     on<HealPlayer>((event, emit) {
-      final players = Map<int, Player>.from(state.players);
-      Player player = players[event.playerId]!;
+      final players = Map<int, Player>.from(state.players)
+        ..update(
+          event.targetId,
+          (player) => player.copyWith(life: player.life + event.delta),
+        );
 
-      int newLifeTotal = player.life + event.delta;
-
-      players[player.id] = player.copyWith(life: newLifeTotal);
+      emit(state.copyWith(players: players));
+    });
+    on<LifelinkDamagePlayer>((event, emit) {
+      final players = Map<int, Player>.from(state.players)
+        ..update(event.targetId, (player) {
+          final life = player.life - event.delta;
+          final isDead = life <= 0;
+          return player.copyWith(life: life, isDead: isDead);
+        })
+        ..update(
+          event.attackerId,
+          (player) => player.copyWith(life: player.life + event.delta),
+        );
 
       emit(state.copyWith(players: players));
     });
   }
+
+  static Map<int, Player> _generatePlayers(int playerCount) =>
+      List.generate(playerCount, (index) {
+        return Player(id: index, name: "Player ${index + 1}", life: 10);
+      }).asMap();
 }
