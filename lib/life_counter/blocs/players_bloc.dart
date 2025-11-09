@@ -37,6 +37,12 @@ class Player {
 
 abstract class PlayerEvent {}
 
+class SetStartingLife extends PlayerEvent {
+  final int startingLife;
+
+  SetStartingLife(this.startingLife);
+}
+
 class ResetPlayers extends PlayerEvent {
   final int playerCount;
 
@@ -66,21 +72,30 @@ class LifelinkDamagePlayer extends PlayerEvent {
 }
 
 class PlayersState {
+  final int startingLife;
   final Map<int, Player> players;
-  PlayersState(this.players);
 
-  PlayersState copyWith({Map<int, Player>? players}) =>
-      PlayersState(players ?? this.players);
+  PlayersState(this.startingLife, this.players);
+
+  PlayersState copyWith({int? startingLife, Map<int, Player>? players}) =>
+      PlayersState(startingLife ?? this.startingLife, players ?? this.players);
 }
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
-  PlayersBloc({required int playerCount})
-    : super(PlayersState(_generatePlayers(playerCount))) {
+  PlayersBloc({required startingLife, required int playerCount})
+    : super(
+        PlayersState(startingLife, _generatePlayers(playerCount, startingLife)),
+      ) {
     on<ResetPlayers>((event, emit) {
-      final players = _generatePlayers(event.playerCount);
+      final players = _generatePlayers(event.playerCount, state.startingLife);
 
       emit(state.copyWith(players: players));
     });
+
+    on<SetStartingLife>((event, emit) {
+      emit(state.copyWith(startingLife: event.startingLife));
+    });
+
     on<DamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
         ..update(event.targetId, (player) {
@@ -91,6 +106,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
 
       emit(state.copyWith(players: players));
     });
+
     on<HealPlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
         ..update(
@@ -100,6 +116,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
 
       emit(state.copyWith(players: players));
     });
+
     on<LifelinkDamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
         ..update(event.targetId, (player) {
@@ -116,8 +133,9 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     });
   }
 
-  static Map<int, Player> _generatePlayers(int playerCount) => List.generate(
-    playerCount,
-    (i) => Player(id: i, name: 'Player ${i + 1}', life: 40),
-  ).fold<Map<int, Player>>({}, (map, player) => map..[player.id] = player);
+  static Map<int, Player> _generatePlayers(int playerCount, int startingLife) =>
+      List.generate(
+        playerCount,
+        (i) => Player(id: i, name: 'Player ${i + 1}', life: startingLife),
+      ).fold<Map<int, Player>>({}, (map, player) => map..[player.id] = player);
 }
