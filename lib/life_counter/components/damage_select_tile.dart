@@ -48,76 +48,100 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Top buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SegmentedButton<DamageMode>(
-                  style: ButtonStyle(
-                    padding: WidgetStateProperty.all(
-                      EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                  ),
                   showSelectedIcon: false,
-                  segments: DamageMode.values.map((damageMode) {
-                    return ButtonSegment<DamageMode>(
-                      value: damageMode,
-                      label: Text(damageMode.label),
-                    );
-                  }).toList(),
+                  segments: DamageMode.values
+                      .map(
+                        (m) => ButtonSegment<DamageMode>(
+                          value: m,
+                          label: Text(m.label),
+                        ),
+                      )
+                      .toList(),
                   selected: {_selectedDamageMode},
-                  onSelectionChanged: (Set<DamageMode> newSelection) {
-                    setState(() {
-                      _selectedDamageMode = newSelection.first;
-                    });
-                  },
+                  onSelectionChanged: (s) =>
+                      setState(() => _selectedDamageMode = s.first),
                 ),
-
+                const SizedBox(width: 12),
                 SegmentedButton<int>(
-                  style: ButtonStyle(
-                    padding: WidgetStateProperty.all(
-                      EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                  ),
                   showSelectedIcon: false,
-                  segments: [
+                  segments: const [
                     ButtonSegment<int>(value: 0, label: Text('Commander')),
                   ],
                   emptySelectionAllowed: true,
                   selected: _isCommanderDamage ? {0} : {},
-                  onSelectionChanged: (newSelection) {
-                    setState(() {
-                      _isCommanderDamage = !_isCommanderDamage;
-                    });
-                  },
+                  onSelectionChanged: (_) =>
+                      setState(() => _isCommanderDamage = !_isCommanderDamage),
                 ),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => _decreaseDamage(),
-                    ),
-                    Text(
+
+            // Center area
+            Expanded(
+              child: Stack(
+                children: [
+                  Row(
+                    children: [
+                      // Left half (-)
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _decreaseDamage,
+                            splashColor: Colors.white24,
+                            highlightColor: Colors.white10,
+                            child: const Center(
+                              child: Icon(
+                                Icons.remove,
+                                size: 64,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Right half (+)
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _increaseDamage,
+                            splashColor: Colors.white24,
+                            highlightColor: Colors.white10,
+                            child: const Center(
+                              child: Icon(
+                                Icons.add,
+                                size: 64,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Center damage number
+                  Center(
+                    child: Text(
                       '$_damageAmount',
                       style: const TextStyle(
-                        fontSize: 32,
+                        fontSize: 64,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _increaseDamage(),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
+
+            // Bottom buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -131,6 +155,7 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                   },
                   child: const Text('Cancel'),
                 ),
+                const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: _applyDamage,
                   child: const Text('Done'),
