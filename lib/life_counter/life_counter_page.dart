@@ -157,7 +157,11 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                           color: _playerColors[index % _playerColors.length],
                           child: Transform.rotate(
                             angle: _getPlayerRotateAngle(row, index),
-                            child: _getPlayerTile(player, index),
+                            child: _getPlayerTile(
+                              player,
+                              index,
+                              state.turnPlayerId,
+                            ),
                           ),
                         ),
                       ),
@@ -195,24 +199,22 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   List<List<int>> _getLayoutRows(List<int> playerIds) {
     List<List<int>> rows = [];
     List<int> row = [];
+    final len = playerIds.length;
 
-    for (var playerId in playerIds) {
-      row.add(playerId);
-
-      if (row.length >= 2) {
-        rows.add(row);
-        row = [];
+    for (var r = 0; 2 * r < len; r++) {
+      if ((r + 1) * 2 <= len) {
+        row.add(len - r - 1);
       }
-    }
+      row.add(r);
 
-    if (row.isNotEmpty) {
       rows.add(row);
+      row = [];
     }
 
     return rows;
   }
 
-  Widget _getPlayerTile(Player player, int index) {
+  Widget _getPlayerTile(Player player, int index, int turnPlayerId) {
     final isDamageMode = _damageTargetIndex == index;
 
     if (player.isDead()) {
@@ -225,7 +227,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
         onDone: _applyDamage,
       );
     } else {
-      return PlayerTile(player: player);
+      return PlayerTile(player: player, isPlayersTurn: turnPlayerId == index);
     }
   }
 

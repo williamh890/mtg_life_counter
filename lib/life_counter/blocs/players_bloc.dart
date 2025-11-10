@@ -68,20 +68,36 @@ class LifelinkDamagePlayer extends PlayerEvent {
   LifelinkDamagePlayer(this.attackerId, this.targetId, this.delta);
 }
 
+class PassTurn extends PlayerEvent {
+  PassTurn();
+}
+
 class PlayersState {
   final int startingLife;
   final Map<int, Player> players;
+  final int turnPlayerId;
 
-  PlayersState(this.startingLife, this.players);
+  PlayersState(this.startingLife, this.players, this.turnPlayerId);
 
-  PlayersState copyWith({int? startingLife, Map<int, Player>? players}) =>
-      PlayersState(startingLife ?? this.startingLife, players ?? this.players);
+  PlayersState copyWith({
+    int? startingLife,
+    Map<int, Player>? players,
+    int? turnPlayerId,
+  }) => PlayersState(
+    startingLife ?? this.startingLife,
+    players ?? this.players,
+    turnPlayerId ?? this.turnPlayerId,
+  );
 }
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
   PlayersBloc({required startingLife, required int playerCount})
     : super(
-        PlayersState(startingLife, _generatePlayers(playerCount, startingLife)),
+        PlayersState(
+          startingLife,
+          _generatePlayers(playerCount, startingLife),
+          0,
+        ),
       ) {
     on<ResetPlayers>((event, emit) {
       final players = _generatePlayers(event.playerCount, state.startingLife);
@@ -91,13 +107,18 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
 
     on<SetStartingLife>((event, emit) {
       final players = state.players.map(
-        (id, player) => MapEntry(
-          id,
-          player.copyWith(life: event.startingLife),
-        ),
+        (id, player) => MapEntry(id, player.copyWith(life: event.startingLife)),
       );
 
       emit(state.copyWith(players: players, startingLife: event.startingLife));
+    });
+    on<PassTurn>((event, emit) {
+      int nextPlayer = state.turnPlayerId + 1;
+      if (nextPlayer > state.players.length - 1) {
+        nextPlayer = 0;
+      }
+
+      emit(state.copyWith(turnPlayerId: nextPlayer));
     });
 
     on<DamagePlayer>((event, emit) {
