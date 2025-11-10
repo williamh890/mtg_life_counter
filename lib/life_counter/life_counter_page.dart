@@ -15,17 +15,6 @@ class LifeCounterPage extends StatefulWidget {
 }
 
 class _LifeCounterPageState extends State<LifeCounterPage> {
-  static const List<Color> _playerColors = [
-    Colors.redAccent,
-    Colors.blueAccent,
-    Colors.greenAccent,
-    Colors.orangeAccent,
-    Colors.purpleAccent,
-    Colors.yellowAccent,
-    Colors.cyanAccent,
-    Colors.pinkAccent,
-  ];
-
   final List<GlobalKey> _tileKeys = [];
   Offset? _dragStart;
   Offset? _dragCurrent;
@@ -154,7 +143,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                         child: Container(
                           key: _tileKeys[index],
                           margin: EdgeInsets.zero,
-                          color: _playerColors[index % _playerColors.length],
+                          color: player.getColor(),
                           child: Transform.rotate(
                             angle: _getPlayerRotateAngle(row, index),
                             child: _getPlayerTile(

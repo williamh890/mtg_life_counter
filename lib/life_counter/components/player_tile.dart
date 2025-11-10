@@ -15,35 +15,67 @@ class PlayerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.read<PlayersBloc>().state;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          Text(
-            player.name,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${player.life}',
-            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+          // Main column centered
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // shrink to content
+              children: [
+                Text(
+                  player.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${player.life}',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (isPlayersTurn) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onPanStart: (_) {},
+                    onPanUpdate: (_) {},
+                    onPanEnd: (_) {},
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.read<PlayersBloc>().add(PassTurn());
+                      },
+                      child: const Text('Pass Turn'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
 
-          if (isPlayersTurn) ...[
-            const SizedBox(height: 8),
-
-            GestureDetector(
-              onPanStart: (_) {},
-              onPanUpdate: (_) {},
-              onPanEnd: (_) {},
-              child: ElevatedButton(
-                onPressed: () {
-                  context.read<PlayersBloc>().add(PassTurn());
-                },
-                child: const Text('Pass Turn'),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: player.commanderDamage.entries.map((e) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Chip(
+                      backgroundColor: state.players[e.key]!.getColor(),
+                      label: Text('${e.value}'),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

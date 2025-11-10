@@ -25,6 +25,7 @@ class DamageSelectTile extends StatefulWidget {
 
 class _DamageSelectTileState extends State<DamageSelectTile> {
   DamageMode _selectedDamageMode = DamageMode.damage;
+  bool _isCommanderDamage = false;
   int _damageAmount = 0;
 
   void _increaseDamage() {
@@ -65,6 +66,25 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                 onSelectionChanged: (Set<DamageMode> newSelection) {
                   setState(() {
                     _selectedDamageMode = newSelection.first;
+                  });
+                },
+              ),
+
+              SegmentedButton<int>(
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(
+                    EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment<int>(value: 0, label: Text('Commander')),
+                ],
+                emptySelectionAllowed: true,
+                selected: _isCommanderDamage ? {0} : {},
+                onSelectionChanged: (newSelection) {
+                  setState(() {
+                    _isCommanderDamage = !_isCommanderDamage;
                   });
                 },
               ),
@@ -138,7 +158,12 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
       ),
     };
 
-    context.read<PlayersBloc>().add(event);
+    final bloc = context.read<PlayersBloc>();
+    bloc.add(event);
+
+    if (_isCommanderDamage) {
+      bloc.add(CommanderDamage(source!, target, _damageAmount));
+    }
 
     setState(() {
       _damageAmount = 0;
