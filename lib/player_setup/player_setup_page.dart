@@ -27,32 +27,44 @@ class PlayerSetupPage extends StatelessWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
-              children: List.generate(8, (i) {
-                final count = i + 1;
-                return ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 24,
-                    ),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  onPressed: () {
-                    final bloc = context.read<PlayersBloc>();
-                    bloc.add(ResetPlayers(count));
-                    Navigator.pushNamed(context, '/life_counter');
-                  },
-                  child: Text('$count Player${count == 1 ? '' : 's'}'),
-                );
-              }),
+
+            BlocBuilder<PlayersBloc, PlayersState>(
+              builder: (context, state) => _playerCountSelector(context),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/life_counter');
+              },
+              child: const Text('Start Game'),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _playerCountSelector(BuildContext context) {
+    final maxPlayers = 8;
+    final bloc = context.read<PlayersBloc>();
+
+    return SegmentedButton<int>(
+      segments: List.generate(maxPlayers, (i) {
+        final playerCount = i + 1;
+        return ButtonSegment<int>(
+          value: playerCount,
+          label: Text('$playerCount player${playerCount > 1 ? 's' : ''}'),
+        );
+      }).toList(),
+      style: ButtonStyle(
+        padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 12)),
+      ),
+      showSelectedIcon: false,
+      selected: <int>{bloc.state.players.length},
+      onSelectionChanged: (Set<int> newSelection) {
+        final playerCount = newSelection.first;
+        bloc.add(ResetPlayers(playerCount));
+      },
     );
   }
 

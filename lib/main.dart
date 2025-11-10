@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PlayersBloc(startingLife: 40, playerCount: 0),
+      create: (_) => PlayersBloc(startingLife: 40, playerCount: 4),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         onGenerateRoute: _appRouter.onGenerateRoute,
