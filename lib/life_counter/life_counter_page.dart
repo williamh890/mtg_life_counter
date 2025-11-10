@@ -105,7 +105,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           backgroundColor: Colors.black,
           body: LayoutBuilder(
             builder: (context, constraints) {
-              final spacing = 4.0;
+              final spacing = 0.0;
               final tiles = <Widget>[];
 
               // compute row structure

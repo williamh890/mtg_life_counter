@@ -43,99 +43,102 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              SegmentedButton<DamageMode>(
-                style: ButtonStyle(
-                  padding: WidgetStateProperty.all(
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SegmentedButton<DamageMode>(
+                  style: ButtonStyle(
+                    padding: WidgetStateProperty.all(
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    ),
                   ),
+                  showSelectedIcon: false,
+                  segments: DamageMode.values.map((damageMode) {
+                    return ButtonSegment<DamageMode>(
+                      value: damageMode,
+                      label: Text(damageMode.label),
+                    );
+                  }).toList(),
+                  selected: {_selectedDamageMode},
+                  onSelectionChanged: (Set<DamageMode> newSelection) {
+                    setState(() {
+                      _selectedDamageMode = newSelection.first;
+                    });
+                  },
                 ),
-                showSelectedIcon: false,
-                segments: DamageMode.values.map((damageMode) {
-                  return ButtonSegment<DamageMode>(
-                    value: damageMode,
-                    label: Text(damageMode.label),
-                  );
-                }).toList(),
-                selected: {_selectedDamageMode},
-                onSelectionChanged: (Set<DamageMode> newSelection) {
-                  setState(() {
-                    _selectedDamageMode = newSelection.first;
-                  });
-                },
-              ),
 
-              SegmentedButton<int>(
-                style: ButtonStyle(
-                  padding: WidgetStateProperty.all(
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                SegmentedButton<int>(
+                  style: ButtonStyle(
+                    padding: WidgetStateProperty.all(
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    ),
                   ),
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment<int>(value: 0, label: Text('Commander')),
+                  ],
+                  emptySelectionAllowed: true,
+                  selected: _isCommanderDamage ? {0} : {},
+                  onSelectionChanged: (newSelection) {
+                    setState(() {
+                      _isCommanderDamage = !_isCommanderDamage;
+                    });
+                  },
                 ),
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment<int>(value: 0, label: Text('Commander')),
-                ],
-                emptySelectionAllowed: true,
-                selected: _isCommanderDamage ? {0} : {},
-                onSelectionChanged: (newSelection) {
-                  setState(() {
-                    _isCommanderDamage = !_isCommanderDamage;
-                  });
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Select Damage',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () => _decreaseDamage(),
-              ),
-              Text(
-                '$_damageAmount',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () => _decreaseDamage(),
+                    ),
+                    Text(
+                      '$_damageAmount',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => _increaseDamage(),
+                    ),
+                  ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => _increaseDamage(),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _damageAmount = 0;
-                    _selectedDamageMode = DamageMode.damage;
-                  });
-                  widget.onCancel();
-                },
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: _applyDamage,
-                child: const Text('Done'),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _damageAmount = 0;
+                      _selectedDamageMode = DamageMode.damage;
+                    });
+                    widget.onCancel();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: _applyDamage,
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
