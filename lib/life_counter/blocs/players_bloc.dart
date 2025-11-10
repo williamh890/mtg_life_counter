@@ -16,22 +16,19 @@ class Player {
   final int id;
   String name;
   int life;
-  bool isDead;
 
-  Player({
-    required this.id,
-    required this.name,
-    required this.life,
-    this.isDead = false,
-  });
+  Player({required this.id, required this.name, required this.life});
 
-  Player copyWith({int? id, String? name, int? life, bool? isDead}) {
+  Player copyWith({int? id, String? name, int? life}) {
     return Player(
       id: id ?? this.id,
       name: name ?? this.name,
       life: life ?? this.life,
-      isDead: isDead ?? this.isDead,
     );
+  }
+
+  bool isDead() {
+    return life <= 0;
   }
 }
 
@@ -93,16 +90,22 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     });
 
     on<SetStartingLife>((event, emit) {
-      emit(state.copyWith(startingLife: event.startingLife));
+      final players = state.players.map(
+        (id, player) => MapEntry(
+          id,
+          player.copyWith(life: event.startingLife),
+        ),
+      );
+
+      emit(state.copyWith(players: players, startingLife: event.startingLife));
     });
 
     on<DamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
-        ..update(event.targetId, (player) {
-          final life = player.life - event.delta;
-          final isDead = life <= 0;
-          return player.copyWith(life: life, isDead: isDead);
-        });
+        ..update(
+          event.targetId,
+          (player) => player.copyWith(life: player.life - event.delta),
+        );
 
       emit(state.copyWith(players: players));
     });
@@ -119,11 +122,10 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
 
     on<LifelinkDamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
-        ..update(event.targetId, (player) {
-          final life = player.life - event.delta;
-          final isDead = life <= 0;
-          return player.copyWith(life: life, isDead: isDead);
-        })
+        ..update(
+          event.targetId,
+          (player) => player.copyWith(life: player.life - event.delta),
+        )
         ..update(
           event.attackerId,
           (player) => player.copyWith(life: player.life + event.delta),

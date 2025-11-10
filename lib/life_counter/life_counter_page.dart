@@ -215,7 +215,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
   Widget _getPlayerTile(Player player, int index) {
     final isDamageMode = _damageTargetIndex == index;
 
-    if (player.isDead) {
+    if (player.isDead()) {
       return DeadPlayerTile();
     } else if (isDamageMode) {
       return DamageSelectTile(
