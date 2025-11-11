@@ -83,16 +83,16 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     }
   }
 
-  double _getPlayerRotateAngle(List<int> row, int index) {
+  int _getPlayerQuarterTurns(List<int> row, int index) {
     if (row.length == 1) {
       return 0;
     }
 
     final isLeftTile = row.indexOf(index) == 0;
     if (isLeftTile) {
-      return pi / 2;
+      return 1;
     } else {
-      return -pi / 2;
+      return -1;
     }
   }
 
@@ -101,85 +101,70 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     return BlocBuilder<PlayersBloc, PlayersState>(
       builder: (context, state) {
         final players = state.players;
-        return Scaffold(
-          backgroundColor: Colors.black,
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              final spacing = 0.0;
-              final tiles = <Widget>[];
+        final playerIds = players.keys.toList();
+        final rows = _getLayoutRows(playerIds);
 
-              // compute row structure
-              final playerIds = state.players.keys.toList();
-              List<List<int>> rows = _getLayoutRows(playerIds);
-
-              final rowCount = rows.length;
-              final rowHeight =
-                  (constraints.maxHeight - spacing * (rowCount + 1)) / rowCount;
-
-              double y = spacing;
-              for (var row in rows) {
-                final countInRow = row.length;
-                final width =
-                    (constraints.maxWidth - spacing * (countInRow + 1)) /
-                    countInRow;
-                double x = spacing;
-                for (var index in row) {
-                  Player player = players[index]!;
-                  tiles.add(
-                    Positioned(
-                      left: x,
-                      top: y,
-                      width: width,
-                      height: rowHeight,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onPanStart: (d) => _startDrag(index, d.globalPosition),
-                        onPanUpdate: (d) => _updateDrag(d.globalPosition),
-                        onPanEnd: (_) {
-                          if (_dragCurrent != null) {
-                            _endDrag(_dragCurrent!);
-                          }
-                        },
-                        child: Container(
-                          key: _tileKeys[index],
-                          margin: EdgeInsets.zero,
-                          color: player.getColor(),
-                          child: Transform.rotate(
-                            angle: _getPlayerRotateAngle(row, index),
-                            child: _getPlayerTile(
-                              player,
-                              index,
-                              state.turnPlayerId,
+        final playerTiles = Scaffold(
+          body: SizedBox.expand(
+            child: Column(
+              children: rows.map((row) {
+                return Expanded(
+                  child: Row(
+                    children: row.map((playerId) {
+                      final player = players[playerId]!;
+                      return Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onPanStart: (d) =>
+                              _startDrag(playerId, d.globalPosition),
+                          onPanUpdate: (d) => _updateDrag(d.globalPosition),
+                          onPanEnd: (_) {
+                            if (_dragCurrent != null) _endDrag(_dragCurrent!);
+                          },
+                          child: Container(
+                            key: _tileKeys[playerId],
+                            margin: EdgeInsets.zero,
+                            color: player.getColor(),
+                            child: SizedBox.expand(
+                              child: RotatedBox(
+                                quarterTurns: _getPlayerQuarterTurns(
+                                  row,
+                                  playerId,
+                                ),
+                                child: _getPlayerTile(
+                                  player,
+                                  playerId,
+                                  state.turnPlayerId,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                  x += width + spacing;
-                }
-                y += rowHeight + spacing;
-              }
-
-              return Stack(
-                children: [
-                  ...tiles,
-                  if (_isDragging && _dragStart != null && _dragCurrent != null)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _ArrowPainter(
-                            start: _dragStart!,
-                            end: _dragCurrent!,
-                            curveUp: true,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
+                      );
+                    }).toList(),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
+        );
+
+        return Stack(
+          children: [
+            playerTiles,
+            if (_isDragging && _dragStart != null && _dragCurrent != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _ArrowPainter(
+                      start: _dragStart!,
+                      end: _dragCurrent!,
+                      curveUp: true,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

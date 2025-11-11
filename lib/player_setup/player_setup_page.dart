@@ -45,7 +45,7 @@ class PlayerSetupPage extends StatelessWidget {
   }
 
   Widget _playerCountSelector(BuildContext context) {
-    final maxPlayers = 8;
+    final maxPlayers = 6;
     final bloc = context.read<PlayersBloc>();
 
     return SegmentedButton<int>(

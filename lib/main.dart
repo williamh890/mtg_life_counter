@@ -3,8 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 import 'package:mtg_life_counter/life_counter/life_counter_page.dart';
 import 'player_setup/player_setup_page.dart';
+import 'package:flutter/rendering.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  debugPaintSizeEnabled = true;
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   final AppRouter _appRouter = AppRouter();
