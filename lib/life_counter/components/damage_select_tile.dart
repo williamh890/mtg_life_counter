@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
+import 'package:mtg_life_counter/life_counter/models/damage_mode.dart';
 
 class DamageSelectTile extends StatefulWidget {
   final int? targetId;
@@ -154,6 +155,7 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     final event = switch (_selectedDamageMode) {
       DamageMode.damage => DamagePlayer(target, _damageAmount),
       DamageMode.healing => HealPlayer(target, _damageAmount),
+      DamageMode.infect => InfectDamagePlayer(target, _damageAmount),
       DamageMode.lifelink => LifelinkDamagePlayer(
         source!,
         target,

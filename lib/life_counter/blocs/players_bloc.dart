@@ -1,64 +1,6 @@
 // blocs/life_bloc.dart
-
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-enum DamageMode {
-  damage("Damage"),
-  healing("Healing"),
-  lifelink("Lifelink");
-
-  final String label;
-
-  const DamageMode(this.label);
-}
-
-class Player {
-  final int id;
-  String name;
-  int life;
-  Map<int, int> commanderDamage;
-
-  static const List<Color> _colors = [
-    Colors.redAccent,
-    Colors.blueAccent,
-    Colors.greenAccent,
-    Colors.orangeAccent,
-    Colors.purpleAccent,
-    Colors.yellowAccent,
-    Colors.cyanAccent,
-    Colors.pinkAccent,
-  ];
-
-  Player({
-    required this.id,
-    required this.name,
-    required this.life,
-    required this.commanderDamage,
-  });
-
-  Player copyWith({
-    int? id,
-    String? name,
-    int? life,
-    Map<int, int>? commanderDamage,
-  }) {
-    return Player(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      life: life ?? this.life,
-      commanderDamage: commanderDamage ?? this.commanderDamage,
-    );
-  }
-
-  bool isDead() {
-    return life <= 0 || commanderDamage.values.any((v) => v >= 21);
-  }
-
-  Color getColor() {
-    return _colors[id % _colors.length];
-  }
-}
+import 'package:mtg_life_counter/life_counter/models/player.dart';
 
 abstract class PlayerEvent {}
 
@@ -86,6 +28,13 @@ class HealPlayer extends PlayerEvent {
   final int delta;
 
   HealPlayer(this.targetId, this.delta);
+}
+
+class InfectDamagePlayer extends PlayerEvent {
+  final int targetId;
+  final int delta;
+
+  InfectDamagePlayer(this.targetId, this.delta);
 }
 
 class LifelinkDamagePlayer extends PlayerEvent {
@@ -177,6 +126,16 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       emit(state.copyWith(players: players));
     });
 
+    on<InfectDamagePlayer>((event, emit) {
+      final players = Map<int, Player>.from(state.players)
+        ..update(
+          event.targetId,
+          (player) => player.copyWith(infect: player.infect + event.delta),
+        );
+
+      emit(state.copyWith(players: players));
+    });
+
     on<LifelinkDamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
         ..update(
@@ -215,6 +174,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           id: i,
           name: 'Player ${i + 1}',
           life: startingLife,
+          infect: 0,
           commanderDamage: {},
         ),
       ).fold<Map<int, Player>>({}, (map, player) => map..[player.id] = player);

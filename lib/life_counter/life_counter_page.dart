@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/components/damage_select_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/dead_player_tile.dart';
+import 'package:mtg_life_counter/life_counter/models/player.dart';
 import 'blocs/players_bloc.dart';
 import 'components/player_tile.dart';
 
