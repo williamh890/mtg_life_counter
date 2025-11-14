@@ -52,40 +52,34 @@ class PlayerTile extends StatelessWidget {
 
     final cmdDamage = Align(
       alignment: Alignment.bottomLeft,
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: player.commanderDamage.entries.map((e) {
+              return Chip(
+                backgroundColor: state.players[e.key]!.getColor(),
+                label: Text('${e.value}'),
+              );
+            }).toList(),
+          ),
+          if (player.infect > 0)
             Column(
-              mainAxisSize: MainAxisSize.min,
-              children: player.commanderDamage.entries.map((e) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Chip(
-                    backgroundColor: state.players[e.key]!.getColor(),
-                    label: Text('${e.value}'),
-                  ),
-                );
-              }).toList(),
-            ),
-            if (player.infect > 0)
-              Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Chip(
-                      backgroundColor: Colors.black,
-                      label: Text(
-                        'i ${player.infect}',
-                        style: TextStyle(color: Colors.green),
-                      ),
+                    backgroundColor: Colors.black,
+                    label: Text(
+                      'i ${player.infect}',
+                      style: TextStyle(color: Colors.green),
                     ),
                   ),
-                ],
-              ),
-          ],
-        ),
+                ),
+              ],
+            ),
+        ],
       ),
     );
 
