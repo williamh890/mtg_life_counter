@@ -72,43 +72,72 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
       ],
     );
 
-    final damageAdjustRow = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Left half (-)
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _decreaseDamage,
-            splashColor: Colors.white24,
-            highlightColor: Colors.white10,
-            child: const Center(
-              child: Icon(Icons.remove, size: 64, color: Colors.white),
+    final damageAdjustRow = Expanded(
+      child: Stack(
+        children: [
+          // Background row with buttons taking full left/right halves
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left half (-)
+              Expanded(
+                flex: 1,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _decreaseDamage,
+                    splashColor: Colors.white24,
+                    highlightColor: Colors.white10,
+                    child: const Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 24),
+                        child: Icon(
+                          Icons.remove,
+                          size: 64,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Right half (+)
+              Expanded(
+                flex: 1,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _increaseDamage,
+                    splashColor: Colors.white24,
+                    highlightColor: Colors.white10,
+                    child: const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 24),
+                        child: Icon(Icons.add, size: 64, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Damage amount centered on top
+          Center(
+            child: Text(
+              '$_damageAmount',
+              style: const TextStyle(
+                fontSize: 64,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
-        ),
-        Text(
-          '$_damageAmount',
-          style: const TextStyle(
-            fontSize: 64,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-
-        // Right half (+)
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _increaseDamage,
-            splashColor: Colors.white24,
-            highlightColor: Colors.white10,
-            child: const Center(
-              child: Icon(Icons.add, size: 64, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
     final confirmButtonsRow = Row(
       mainAxisAlignment: MainAxisAlignment.center,
