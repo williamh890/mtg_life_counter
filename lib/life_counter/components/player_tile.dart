@@ -53,8 +53,9 @@ class PlayerTile extends StatelessWidget {
     final cmdDamage = Align(
       alignment: Alignment.bottomLeft,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(4.0),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Column(
               mainAxisSize: MainAxisSize.min,
@@ -72,7 +73,7 @@ class PlayerTile extends StatelessWidget {
               Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Chip(
                       backgroundColor: Colors.black,
                       label: Text(
