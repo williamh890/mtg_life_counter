@@ -30,11 +30,37 @@ class HealPlayer extends PlayerEvent {
   HealPlayer(this.targetId, this.delta);
 }
 
+class HealPlayers extends PlayerEvent {
+  final int delta;
+
+  HealPlayers(this.delta);
+}
+
+class HealOpponents extends PlayerEvent {
+  final int sourceId;
+  final int delta;
+
+  HealOpponents(this.sourceId, this.delta);
+}
+
 class InfectDamagePlayer extends PlayerEvent {
   final int targetId;
   final int delta;
 
   InfectDamagePlayer(this.targetId, this.delta);
+}
+
+class InfectDamagePlayers extends PlayerEvent {
+  final int delta;
+
+  InfectDamagePlayers(this.delta);
+}
+
+class InfectDamageOpponents extends PlayerEvent {
+  final int attackerId;
+  final int delta;
+
+  InfectDamageOpponents(this.attackerId, this.delta);
 }
 
 class LifelinkDamagePlayer extends PlayerEvent {
@@ -51,6 +77,19 @@ class CommanderDamage extends PlayerEvent {
   final int delta;
 
   CommanderDamage(this.attackerId, this.targetId, this.delta);
+}
+
+class DamagePlayers extends PlayerEvent {
+  final int delta;
+
+  DamagePlayers(this.delta);
+}
+
+class DamageOpponents extends PlayerEvent {
+  final int delta;
+  final int attackerId;
+
+  DamageOpponents(this.attackerId, this.delta);
 }
 
 class PassTurn extends PlayerEvent {
@@ -116,6 +155,26 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       emit(state.copyWith(players: players));
     });
 
+    on<DamagePlayers>((event, emit) {
+      final players = state.players.map(
+        (id, player) =>
+            MapEntry(id, player.copyWith(life: player.life - event.delta)),
+      );
+      emit(state.copyWith(players: players));
+    });
+
+    on<DamageOpponents>((event, emit) {
+      final players = state.players.map(
+        (id, player) => MapEntry(
+          id,
+          id == event.attackerId
+              ? player
+              : player.copyWith(life: player.life - event.delta),
+        ),
+      );
+      emit(state.copyWith(players: players));
+    });
+
     on<HealPlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
         ..update(
@@ -126,6 +185,26 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       emit(state.copyWith(players: players));
     });
 
+    on<HealPlayers>((event, emit) {
+      final players = state.players.map(
+        (id, player) =>
+            MapEntry(id, player.copyWith(life: player.life + event.delta)),
+      );
+      emit(state.copyWith(players: players));
+    });
+
+    on<HealOpponents>((event, emit) {
+      final players = state.players.map(
+        (id, player) => MapEntry(
+          id,
+          id == event.sourceId
+              ? player
+              : player.copyWith(life: player.life + event.delta),
+        ),
+      );
+      emit(state.copyWith(players: players));
+    });
+
     on<InfectDamagePlayer>((event, emit) {
       final players = Map<int, Player>.from(state.players)
         ..update(
@@ -133,6 +212,26 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           (player) => player.copyWith(infect: player.infect + event.delta),
         );
 
+      emit(state.copyWith(players: players));
+    });
+
+    on<InfectDamagePlayers>((event, emit) {
+      final players = state.players.map(
+        (id, player) =>
+            MapEntry(id, player.copyWith(infect: player.infect + event.delta)),
+      );
+      emit(state.copyWith(players: players));
+    });
+
+    on<InfectDamageOpponents>((event, emit) {
+      final players = state.players.map(
+        (id, player) => MapEntry(
+          id,
+          id == event.attackerId
+              ? player
+              : player.copyWith(infect: player.infect + event.delta),
+        ),
+      );
       emit(state.copyWith(players: players));
     });
 

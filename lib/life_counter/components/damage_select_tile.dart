@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 import 'package:mtg_life_counter/life_counter/models/damage_mode.dart';
+import 'package:mtg_life_counter/life_counter/models/target_select.dart';
 
 class DamageSelectTile extends StatefulWidget {
   final int? targetId;
@@ -26,6 +27,7 @@ class DamageSelectTile extends StatefulWidget {
 
 class _DamageSelectTileState extends State<DamageSelectTile> {
   DamageMode _selectedDamageMode = DamageMode.damage;
+  TargetSelect _targetSelectMode = TargetSelect.player;
   bool _isCommanderDamage = false;
   int _damageAmount = 0;
 
@@ -43,31 +45,56 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
 
   @override
   Widget build(BuildContext context) {
-    final damageTypeSelectorRow = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final damageTypeSelectorRow = Column(
       children: [
-        SegmentedButton<DamageMode>(
-          showSelectedIcon: false,
-          segments: DamageMode.values
-              .map(
-                (m) =>
-                    ButtonSegment<DamageMode>(value: m, label: Text(m.label)),
-              )
-              .toList(),
-          selected: {_selectedDamageMode},
-          onSelectionChanged: (s) =>
-              setState(() => _selectedDamageMode = s.first),
-        ),
-        const SizedBox(width: 12),
-        SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment<int>(value: 0, label: Text('Commander')),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SegmentedButton<DamageMode>(
+              showSelectedIcon: false,
+              segments: DamageMode.values
+                  .map(
+                    (m) => ButtonSegment<DamageMode>(
+                      value: m,
+                      label: Text(m.label),
+                    ),
+                  )
+                  .toList(),
+              selected: {_selectedDamageMode},
+              onSelectionChanged: (s) =>
+                  setState(() => _selectedDamageMode = s.first),
+            ),
+            const SizedBox(width: 12),
+            SegmentedButton<int>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment<int>(value: 0, label: Text('Commander')),
+              ],
+              emptySelectionAllowed: true,
+              selected: _isCommanderDamage ? {0} : {},
+              onSelectionChanged: (_) =>
+                  setState(() => _isCommanderDamage = !_isCommanderDamage),
+            ),
           ],
-          emptySelectionAllowed: true,
-          selected: _isCommanderDamage ? {0} : {},
-          onSelectionChanged: (_) =>
-              setState(() => _isCommanderDamage = !_isCommanderDamage),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SegmentedButton<TargetSelect>(
+              showSelectedIcon: false,
+              segments: TargetSelect.values
+                  .map(
+                    (m) => ButtonSegment<TargetSelect>(
+                      value: m,
+                      label: Text(m.label),
+                    ),
+                  )
+                  .toList(),
+              selected: <TargetSelect>{_targetSelectMode},
+              onSelectionChanged: (s) =>
+                  setState(() => _targetSelectMode = s.first),
+            ),
+          ],
         ),
       ],
     );
@@ -181,11 +208,37 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
       return;
     }
 
-    final event = switch (_selectedDamageMode) {
-      DamageMode.damage => DamagePlayer(target, _damageAmount),
-      DamageMode.healing => HealPlayer(target, _damageAmount),
-      DamageMode.infect => InfectDamagePlayer(target, _damageAmount),
-      DamageMode.lifelink => LifelinkDamagePlayer(
+    final event = switch ((_selectedDamageMode, _targetSelectMode)) {
+      (DamageMode.damage, TargetSelect.player) => DamagePlayer(
+        target,
+        _damageAmount,
+      ),
+      (DamageMode.damage, TargetSelect.players) => DamagePlayers(_damageAmount),
+      (DamageMode.damage, TargetSelect.opponents) => DamageOpponents(
+        source!,
+        _damageAmount,
+      ),
+      (DamageMode.healing, TargetSelect.player) => HealPlayer(
+        target,
+        _damageAmount,
+      ),
+      (DamageMode.healing, TargetSelect.players) => HealPlayers(_damageAmount),
+      (DamageMode.healing, TargetSelect.opponents) => HealOpponents(
+        source!,
+        _damageAmount,
+      ),
+      (DamageMode.infect, TargetSelect.player) => InfectDamagePlayer(
+        target,
+        _damageAmount,
+      ),
+      (DamageMode.infect, TargetSelect.players) => InfectDamagePlayers(
+        _damageAmount,
+      ),
+      (DamageMode.infect, TargetSelect.opponents) => InfectDamageOpponents(
+        source!,
+        _damageAmount,
+      ),
+      (DamageMode.lifelink, _) => LifelinkDamagePlayer(
         source!,
         target,
         _damageAmount,
@@ -202,6 +255,7 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     setState(() {
       _damageAmount = 0;
       _selectedDamageMode = DamageMode.damage;
+      _targetSelectMode = TargetSelect.player;
     });
 
     widget.onDone();
