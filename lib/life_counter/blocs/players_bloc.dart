@@ -71,6 +71,13 @@ class LifelinkDamagePlayer extends PlayerEvent {
   LifelinkDamagePlayer(this.attackerId, this.targetId, this.delta);
 }
 
+class Extort extends PlayerEvent {
+  final int attackerId;
+  final int delta;
+
+  Extort(this.attackerId, this.delta);
+}
+
 class CommanderDamage extends PlayerEvent {
   final int attackerId;
   final int targetId;
@@ -232,6 +239,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
               : player.copyWith(infect: player.infect + event.delta),
         ),
       );
+
       emit(state.copyWith(players: players));
     });
 
@@ -245,6 +253,21 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           event.attackerId,
           (player) => player.copyWith(life: player.life + event.delta),
         );
+
+      emit(state.copyWith(players: players));
+    });
+
+    on<Extort>((event, emit) {
+      final numOpponents = state.players.length - 1;
+
+      final players = state.players.map(
+        (id, player) => MapEntry(
+          id,
+          id == event.attackerId
+              ? player.copyWith(life: player.life + event.delta * numOpponents)
+              : player.copyWith(life: player.life - event.delta),
+        ),
+      );
 
       emit(state.copyWith(players: players));
     });

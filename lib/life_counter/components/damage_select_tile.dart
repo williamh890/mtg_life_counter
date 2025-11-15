@@ -238,11 +238,12 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
         source!,
         _damageAmount,
       ),
-      (DamageMode.lifelink, _) => LifelinkDamagePlayer(
+      (DamageMode.lifelink, TargetSelect.player) => LifelinkDamagePlayer(
         source!,
         target,
         _damageAmount,
       ),
+      (DamageMode.lifelink, _) => Extort(source!, _damageAmount),
     };
 
     final bloc = context.read<PlayersBloc>();
