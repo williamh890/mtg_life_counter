@@ -53,10 +53,17 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
             SegmentedButton<DamageMode>(
               showSelectedIcon: false,
               segments: DamageMode.values
+                  .where((mode) {
+                    if (_isCommanderDamage) {
+                      return mode != DamageMode.infect &&
+                          mode != DamageMode.healing;
+                    }
+                    return true;
+                  })
                   .map(
-                    (m) => ButtonSegment<DamageMode>(
-                      value: m,
-                      label: Text(m.label),
+                    (mode) => ButtonSegment<DamageMode>(
+                      value: mode,
+                      label: Text(_getDamageTypeLabel(mode, _targetSelectMode)),
                     ),
                   )
                   .toList(),
@@ -64,17 +71,21 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
               onSelectionChanged: (s) =>
                   setState(() => _selectedDamageMode = s.first),
             ),
-            const SizedBox(width: 12),
-            SegmentedButton<int>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment<int>(value: 0, label: Text('Commander')),
-              ],
-              emptySelectionAllowed: true,
-              selected: _isCommanderDamage ? {0} : {},
-              onSelectionChanged: (_) =>
-                  setState(() => _isCommanderDamage = !_isCommanderDamage),
-            ),
+            if (_targetSelectMode == TargetSelect.player &&
+                (_selectedDamageMode != DamageMode.infect &&
+                    _selectedDamageMode != DamageMode.healing)) ...[
+              const SizedBox(width: 12),
+              SegmentedButton<int>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment<int>(value: 0, label: Text('Commander')),
+                ],
+                emptySelectionAllowed: true,
+                selected: _isCommanderDamage ? {0} : {},
+                onSelectionChanged: (_) =>
+                    setState(() => _isCommanderDamage = !_isCommanderDamage),
+              ),
+            ],
           ],
         ),
         Row(
@@ -83,10 +94,16 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
             SegmentedButton<TargetSelect>(
               showSelectedIcon: false,
               segments: TargetSelect.values
+                  .where((mode) {
+                    if (_isCommanderDamage) {
+                      return mode == TargetSelect.player;
+                    }
+                    return true;
+                  })
                   .map(
-                    (m) => ButtonSegment<TargetSelect>(
-                      value: m,
-                      label: Text(m.label),
+                    (mode) => ButtonSegment<TargetSelect>(
+                      value: mode,
+                      label: Text(mode.label),
                     ),
                   )
                   .toList(),
@@ -260,5 +277,13 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     });
 
     widget.onDone();
+  }
+
+  String _getDamageTypeLabel(DamageMode damageMode, TargetSelect target) {
+    if (damageMode == DamageMode.lifelink && target != TargetSelect.player) {
+      return 'Extort';
+    } else {
+      return damageMode.label;
+    }
   }
 }
