@@ -1,6 +1,7 @@
 // lib/ui/life_counter_page.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/components/damage_select_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/dead_player_tile.dart';
@@ -86,66 +87,74 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
 
   int _getPlayerQuarterTurns(List<int> row, int index) {
     if (row.length == 1) {
-      return 0;
+      return -1;
     }
 
     final isLeftTile = row.indexOf(index) == 0;
     if (isLeftTile) {
-      return 1;
+      return 2;
     } else {
-      return -1;
+      return -0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
     return BlocBuilder<PlayersBloc, PlayersState>(
       builder: (context, state) {
         final players = state.players;
         final playerIds = players.keys.toList();
-        final rows = _getLayoutRows(playerIds);
+        final columns = _getLayoutColumns(playerIds);
 
         final playerTiles = Scaffold(
-          body: SizedBox.expand(
-            child: Column(
-              children: rows.map((row) {
-                return Expanded(
-                  child: Row(
-                    children: row.map((playerId) {
-                      final player = players[playerId]!;
-                      return Expanded(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onPanStart: (d) =>
-                              _startDrag(playerId, d.globalPosition),
-                          onPanUpdate: (d) => _updateDrag(d.globalPosition),
-                          onPanEnd: (_) {
-                            if (_dragCurrent != null) _endDrag(_dragCurrent!);
-                          },
-                          child: Container(
-                            key: _tileKeys[playerId],
-                            margin: EdgeInsets.zero,
-                            color: player.getColor(),
-                            child: SizedBox.expand(
-                              child: RotatedBox(
-                                quarterTurns: _getPlayerQuarterTurns(
-                                  row,
-                                  playerId,
-                                ),
-                                child: _getPlayerTile(
-                                  player,
-                                  playerId,
-                                  state.turnPlayerId,
+          body: SafeArea(
+            child: SizedBox.expand(
+              child: Row(
+                children: columns.map((column) {
+                  return Flexible(
+                    flex: column.length + columns.length,
+                    child: Column(
+                      children: column.map((playerId) {
+                        final player = players[playerId]!;
+                        return Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onPanStart: (d) =>
+                                _startDrag(playerId, d.globalPosition),
+                            onPanUpdate: (d) => _updateDrag(d.globalPosition),
+                            onPanEnd: (_) {
+                              if (_dragCurrent != null) _endDrag(_dragCurrent!);
+                            },
+                            child: Container(
+                              key: _tileKeys[playerId],
+                              margin: EdgeInsets.zero,
+                              color: player.getColor(),
+                              child: SizedBox.expand(
+                                child: RotatedBox(
+                                  quarterTurns: _getPlayerQuarterTurns(
+                                    column,
+                                    playerId,
+                                  ),
+                                  child: _getPlayerTile(
+                                    player,
+                                    playerId,
+                                    state.turnPlayerId,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         );
@@ -171,22 +180,33 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     );
   }
 
-  List<List<int>> _getLayoutRows(List<int> playerIds) {
-    List<List<int>> rows = [];
-    List<int> row = [];
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
+  }
+
+  List<List<int>> _getLayoutColumns(List<int> playerIds) {
+    List<List<int>> columns = [];
+    List<int> column = [];
     final len = playerIds.length;
 
     for (var r = 0; 2 * r < len; r++) {
       if ((r + 1) * 2 <= len) {
-        row.add(len - r - 1);
+        column.add(r);
       }
-      row.add(r);
+      column.add(len - r - 1);
 
-      rows.add(row);
-      row = [];
+      columns.add(column);
+      column = [];
     }
 
-    return rows;
+    return columns;
   }
 
   Widget _getPlayerTile(Player player, int index, int turnPlayerId) {

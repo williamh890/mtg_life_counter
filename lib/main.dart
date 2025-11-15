@@ -6,6 +6,7 @@ import 'player_setup/player_setup_page.dart';
 import 'package:flutter/rendering.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   debugPaintSizeEnabled = false;
   runApp(MyApp());
 }
