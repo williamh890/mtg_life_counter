@@ -18,95 +18,109 @@ class PlayerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.read<PlayersBloc>().state;
 
-    final damageDisplay = Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(
-                children: [
-                  Text(
-                    player.name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${player.life}',
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-
-    final cmdDamage = Align(
-      alignment: Alignment.bottomLeft,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: player.commanderDamage.entries.map((e) {
-              return Chip(
-                backgroundColor: state.players[e.key]!.getColor(),
-                label: Text('${e.value}'),
-              );
-            }).toList(),
-          ),
-          if (player.infect > 0)
+    final damageDisplay = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Chip(
-                    backgroundColor: Colors.black,
-                    label: Text(
-                      'i ${player.infect}',
-                      style: TextStyle(color: Colors.green),
-                    ),
+                Text(
+                  player.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${player.life}',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-        ],
-      ),
-    );
-
-    final passTurnButton = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onPanStart: (_) {},
-            onPanUpdate: (_) {},
-            onPanEnd: (_) {},
-            child: ElevatedButton(
-              onPressed: () {
-                context.read<PlayersBloc>().add(PassTurn());
-              },
-              child: const Text('Pass Turn'),
-            ),
-          ),
+          ],
         ),
       ],
     );
 
+    final commanderDamageDisplay = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: player.commanderDamage.entries.map((e) {
+        return Padding(
+          padding: EdgeInsets.zero,
+          child: Chip(
+            backgroundColor: state.players[e.key]!.getColor(),
+            label: Text(
+              '${e.value}',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        );
+      }).toList(),
+    );
+
+    final infectChip = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Padding(
+        padding: EdgeInsets.zero,
+        child: Chip(
+          backgroundColor: Colors.black,
+          label: Text(
+            'i ${player.infect}',
+            style: TextStyle(color: Colors.green),
+          ),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+    );
+
+    final passTurnButton = SizedBox(
+      width: double.infinity,
+      child: GestureDetector(
+        onPanStart: (_) {},
+        onPanUpdate: (_) {},
+        onPanEnd: (_) {},
+        child: ElevatedButton(
+          onPressed: () {
+            context.read<PlayersBloc>().add(PassTurn());
+          },
+          child: const Text('Pass Turn'),
+        ),
+      ),
+    );
+
+    final bottomContent = Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (player.commanderDamage.isNotEmpty) commanderDamageDisplay,
+              if (player.infect > 0) infectChip,
+            ],
+          ),
+          if (isPlayersTurn) passTurnButton,
+        ],
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [damageDisplay, cmdDamage, if (isPlayersTurn) passTurnButton],
+      child: Stack(
+        children: [
+          Center(child: damageDisplay),
+          bottomContent,
+        ],
       ),
     );
   }
