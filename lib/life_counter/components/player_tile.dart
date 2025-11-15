@@ -86,11 +86,32 @@ class PlayerTile extends StatelessWidget {
         onPanStart: (_) {},
         onPanUpdate: (_) {},
         onPanEnd: (_) {},
-        child: ElevatedButton(
-          onPressed: () {
-            context.read<PlayersBloc>().add(PassTurn());
-          },
-          child: const Text('Pass Turn'),
+        child: Row(
+          children: [
+            BlocBuilder<PlayersBloc, PlayersState>(
+              builder: (context, state) {
+                return IconButton(
+                  icon: const Icon(Icons.undo),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black, // Icon color
+                  ),
+                  tooltip: 'Undo',
+                  onPressed: state.canUndo
+                      ? () => context.read<PlayersBloc>().add(UndoAction())
+                      : null,
+                );
+              },
+            ),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  context.read<PlayersBloc>().add(PassTurn());
+                },
+                child: const Text('Pass Turn'),
+              ),
+            ),
+          ],
         ),
       ),
     );

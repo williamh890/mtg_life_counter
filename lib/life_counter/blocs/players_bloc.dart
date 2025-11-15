@@ -103,22 +103,34 @@ class PassTurn extends PlayerEvent {
   PassTurn();
 }
 
+class UndoAction extends PlayerEvent {}
+
 class PlayersState {
   final int startingLife;
   final Map<int, Player> players;
   final int turnPlayerId;
+  final List<PlayerEvent> eventHistory;
 
-  PlayersState(this.startingLife, this.players, this.turnPlayerId);
+  PlayersState(
+    this.startingLife,
+    this.players,
+    this.turnPlayerId, [
+    this.eventHistory = const [],
+  ]);
 
   PlayersState copyWith({
     int? startingLife,
     Map<int, Player>? players,
     int? turnPlayerId,
+    List<PlayerEvent>? eventHistory,
   }) => PlayersState(
     startingLife ?? this.startingLife,
     players ?? this.players,
     turnPlayerId ?? this.turnPlayerId,
+    eventHistory ?? this.eventHistory,
   );
+
+  bool get canUndo => eventHistory.isNotEmpty;
 }
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
@@ -132,161 +144,268 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       ) {
     on<ResetPlayers>((event, emit) {
       final players = _generatePlayers(event.playerCount, state.startingLife);
-
-      emit(state.copyWith(players: players));
+      emit(PlayersState(state.startingLife, players, 0, []));
     });
 
     on<SetStartingLife>((event, emit) {
       final players = state.players.map(
         (id, player) => MapEntry(id, player.copyWith(life: event.startingLife)),
       );
-
-      emit(state.copyWith(players: players, startingLife: event.startingLife));
+      emit(PlayersState(event.startingLife, players, state.turnPlayerId, []));
     });
-    on<PassTurn>((event, emit) {
-      int nextPlayer = state.turnPlayerId + 1;
-      if (nextPlayer > state.players.length - 1) {
-        nextPlayer = 0;
+
+    on<UndoAction>((event, emit) {
+      if (state.eventHistory.isEmpty) return;
+
+      // Remove last event
+      final newHistory = List<PlayerEvent>.from(state.eventHistory)
+        ..removeLast();
+
+      // Rebuild state from scratch by replaying events
+      PlayersState rebuiltState = PlayersState(
+        state.startingLife,
+        _generatePlayers(state.players.length, state.startingLife),
+        0,
+        [], // Start with empty history
+      );
+
+      // Replay all events
+      for (final evt in newHistory) {
+        rebuiltState = _applyEvent(rebuiltState, evt);
       }
 
-      emit(state.copyWith(turnPlayerId: nextPlayer));
+      // Set the history after replaying
+      emit(rebuiltState.copyWith(eventHistory: newHistory));
+    });
+
+    on<PassTurn>((event, emit) {
+      _emitWithHistory(emit, _passTurn(state, event), event);
     });
 
     on<DamagePlayer>((event, emit) {
-      final players = Map<int, Player>.from(state.players)
-        ..update(
-          event.targetId,
-          (player) => player.copyWith(life: player.life - event.delta),
-        );
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _damagePlayer(state, event), event);
     });
 
     on<DamagePlayers>((event, emit) {
-      final players = state.players.map(
-        (id, player) =>
-            MapEntry(id, player.copyWith(life: player.life - event.delta)),
-      );
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _damagePlayers(state, event), event);
     });
 
     on<DamageOpponents>((event, emit) {
-      final players = state.players.map(
-        (id, player) => MapEntry(
-          id,
-          id == event.attackerId
-              ? player
-              : player.copyWith(life: player.life - event.delta),
-        ),
-      );
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _damageOpponents(state, event), event);
     });
 
     on<HealPlayer>((event, emit) {
-      final players = Map<int, Player>.from(state.players)
-        ..update(
-          event.targetId,
-          (player) => player.copyWith(life: player.life + event.delta),
-        );
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _healPlayer(state, event), event);
     });
 
     on<HealPlayers>((event, emit) {
-      final players = state.players.map(
-        (id, player) =>
-            MapEntry(id, player.copyWith(life: player.life + event.delta)),
-      );
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _healPlayers(state, event), event);
     });
 
     on<HealOpponents>((event, emit) {
-      final players = state.players.map(
-        (id, player) => MapEntry(
-          id,
-          id == event.sourceId
-              ? player
-              : player.copyWith(life: player.life + event.delta),
-        ),
-      );
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _healOpponents(state, event), event);
     });
 
     on<InfectDamagePlayer>((event, emit) {
-      final players = Map<int, Player>.from(state.players)
-        ..update(
-          event.targetId,
-          (player) => player.copyWith(infect: player.infect + event.delta),
-        );
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _infectDamagePlayer(state, event), event);
     });
 
     on<InfectDamagePlayers>((event, emit) {
-      final players = state.players.map(
-        (id, player) =>
-            MapEntry(id, player.copyWith(infect: player.infect + event.delta)),
-      );
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _infectDamagePlayers(state, event), event);
     });
 
     on<InfectDamageOpponents>((event, emit) {
-      final players = state.players.map(
-        (id, player) => MapEntry(
-          id,
-          id == event.attackerId
-              ? player
-              : player.copyWith(infect: player.infect + event.delta),
-        ),
-      );
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _infectDamageOpponents(state, event), event);
     });
 
     on<LifelinkDamagePlayer>((event, emit) {
-      final players = Map<int, Player>.from(state.players)
-        ..update(
-          event.targetId,
-          (player) => player.copyWith(life: player.life - event.delta),
-        )
-        ..update(
-          event.attackerId,
-          (player) => player.copyWith(life: player.life + event.delta),
-        );
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _lifelinkDamagePlayer(state, event), event);
     });
 
     on<Extort>((event, emit) {
-      final numOpponents = state.players.length - 1;
-
-      final players = state.players.map(
-        (id, player) => MapEntry(
-          id,
-          id == event.attackerId
-              ? player.copyWith(life: player.life + event.delta * numOpponents)
-              : player.copyWith(life: player.life - event.delta),
-        ),
-      );
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _extort(state, event), event);
     });
 
     on<CommanderDamage>((event, emit) {
-      final players = Map<int, Player>.from(state.players)
-        ..update(event.targetId, (player) {
-          final commanderDamage = Map<int, int>.from(player.commanderDamage)
-            ..update(
-              event.attackerId,
-              (value) => value + event.delta,
-              ifAbsent: () => event.delta,
-            );
-
-          return player.copyWith(commanderDamage: commanderDamage);
-        });
-
-      emit(state.copyWith(players: players));
+      _emitWithHistory(emit, _commanderDamage(state, event), event);
     });
+  }
+
+  void _emitWithHistory(
+    Emitter<PlayersState> emit,
+    PlayersState newState,
+    PlayerEvent event,
+  ) {
+    final history = List<PlayerEvent>.from(state.eventHistory)..add(event);
+    emit(newState.copyWith(eventHistory: history));
+  }
+
+  PlayersState _applyEvent(PlayersState currentState, PlayerEvent event) {
+    return switch (event) {
+      PassTurn() => _passTurn(currentState, event),
+      DamagePlayer() => _damagePlayer(currentState, event),
+      DamagePlayers() => _damagePlayers(currentState, event),
+      DamageOpponents() => _damageOpponents(currentState, event),
+      HealPlayer() => _healPlayer(currentState, event),
+      HealPlayers() => _healPlayers(currentState, event),
+      HealOpponents() => _healOpponents(currentState, event),
+      InfectDamagePlayer() => _infectDamagePlayer(currentState, event),
+      InfectDamagePlayers() => _infectDamagePlayers(currentState, event),
+      InfectDamageOpponents() => _infectDamageOpponents(currentState, event),
+      LifelinkDamagePlayer() => _lifelinkDamagePlayer(currentState, event),
+      Extort() => _extort(currentState, event),
+      CommanderDamage() => _commanderDamage(currentState, event),
+      _ => currentState,
+    };
+  }
+
+  PlayersState _passTurn(PlayersState state, PassTurn event) {
+    int nextPlayer = state.turnPlayerId + 1;
+    if (nextPlayer > state.players.length - 1) {
+      nextPlayer = 0;
+    }
+    return state.copyWith(turnPlayerId: nextPlayer);
+  }
+
+  PlayersState _damagePlayer(PlayersState state, DamagePlayer event) {
+    final players = Map<int, Player>.from(state.players)
+      ..update(
+        event.targetId,
+        (player) => player.copyWith(life: player.life - event.delta),
+      );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _damagePlayers(PlayersState state, DamagePlayers event) {
+    final players = state.players.map(
+      (id, player) =>
+          MapEntry(id, player.copyWith(life: player.life - event.delta)),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _damageOpponents(PlayersState state, DamageOpponents event) {
+    final players = state.players.map(
+      (id, player) => MapEntry(
+        id,
+        id == event.attackerId
+            ? player
+            : player.copyWith(life: player.life - event.delta),
+      ),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _healPlayer(PlayersState state, HealPlayer event) {
+    final players = Map<int, Player>.from(state.players)
+      ..update(
+        event.targetId,
+        (player) => player.copyWith(life: player.life + event.delta),
+      );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _healPlayers(PlayersState state, HealPlayers event) {
+    final players = state.players.map(
+      (id, player) =>
+          MapEntry(id, player.copyWith(life: player.life + event.delta)),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _healOpponents(PlayersState state, HealOpponents event) {
+    final players = state.players.map(
+      (id, player) => MapEntry(
+        id,
+        id == event.sourceId
+            ? player
+            : player.copyWith(life: player.life + event.delta),
+      ),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _infectDamagePlayer(
+    PlayersState state,
+    InfectDamagePlayer event,
+  ) {
+    final players = Map<int, Player>.from(state.players)
+      ..update(
+        event.targetId,
+        (player) => player.copyWith(infect: player.infect + event.delta),
+      );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _infectDamagePlayers(
+    PlayersState state,
+    InfectDamagePlayers event,
+  ) {
+    final players = state.players.map(
+      (id, player) =>
+          MapEntry(id, player.copyWith(infect: player.infect + event.delta)),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _infectDamageOpponents(
+    PlayersState state,
+    InfectDamageOpponents event,
+  ) {
+    final players = state.players.map(
+      (id, player) => MapEntry(
+        id,
+        id == event.attackerId
+            ? player
+            : player.copyWith(infect: player.infect + event.delta),
+      ),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _lifelinkDamagePlayer(
+    PlayersState state,
+    LifelinkDamagePlayer event,
+  ) {
+    final players = Map<int, Player>.from(state.players)
+      ..update(
+        event.targetId,
+        (player) => player.copyWith(life: player.life - event.delta),
+      )
+      ..update(
+        event.attackerId,
+        (player) => player.copyWith(life: player.life + event.delta),
+      );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _extort(PlayersState state, Extort event) {
+    final numOpponents = state.players.length - 1;
+
+    final players = state.players.map(
+      (id, player) => MapEntry(
+        id,
+        id == event.attackerId
+            ? player.copyWith(life: player.life + event.delta * numOpponents)
+            : player.copyWith(life: player.life - event.delta),
+      ),
+    );
+    return state.copyWith(players: players);
+  }
+
+  PlayersState _commanderDamage(PlayersState state, CommanderDamage event) {
+    final players = Map<int, Player>.from(state.players)
+      ..update(event.targetId, (player) {
+        final commanderDamage = Map<int, int>.from(player.commanderDamage)
+          ..update(
+            event.attackerId,
+            (value) => value + event.delta,
+            ifAbsent: () => event.delta,
+          );
+
+        return player.copyWith(commanderDamage: commanderDamage);
+      });
+    return state.copyWith(players: players);
   }
 
   static Map<int, Player> _generatePlayers(int playerCount, int startingLife) =>

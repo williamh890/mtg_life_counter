@@ -1,7 +1,7 @@
 enum TargetSelect {
   player("Player"),
-  opponents("Opponents"),
-  players("Players");
+  players("Players"),
+  opponents("Opponents");
 
   final String label;
 
