@@ -259,11 +259,14 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
   }
 
   PlayersState _passTurn(PlayersState state, PassTurn event) {
-    int nextPlayer = state.turnPlayerId + 1;
-    if (nextPlayer > state.players.length - 1) {
-      nextPlayer = 0;
+    int nextPlayerId = (state.turnPlayerId + 1) % state.players.length;
+
+    while (state.players[nextPlayerId]!.isDead() &&
+        nextPlayerId != state.turnPlayerId) {
+      nextPlayerId = (nextPlayerId + 1) % state.players.length;
     }
-    return state.copyWith(turnPlayerId: nextPlayer);
+
+    return state.copyWith(turnPlayerId: nextPlayerId);
   }
 
   PlayersState _damagePlayer(PlayersState state, DamagePlayer event) {
