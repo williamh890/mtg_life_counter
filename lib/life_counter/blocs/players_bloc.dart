@@ -4,6 +4,9 @@ import 'package:mtg_life_counter/life_counter/models/player.dart';
 
 abstract class PlayerEvent {}
 
+// Events that should be tracked in history
+abstract class PlayerHistoryEvent extends PlayerEvent {}
+
 class SetStartingLife extends PlayerEvent {
   final int startingLife;
 
@@ -16,54 +19,54 @@ class ResetPlayers extends PlayerEvent {
   ResetPlayers(this.playerCount);
 }
 
-class DamagePlayer extends PlayerEvent {
+class DamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
   DamagePlayer(this.targetId, this.delta);
 }
 
-class HealPlayer extends PlayerEvent {
+class HealPlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
   HealPlayer(this.targetId, this.delta);
 }
 
-class HealPlayers extends PlayerEvent {
+class HealPlayers extends PlayerHistoryEvent {
   final int delta;
 
   HealPlayers(this.delta);
 }
 
-class HealOpponents extends PlayerEvent {
+class HealOpponents extends PlayerHistoryEvent {
   final int sourceId;
   final int delta;
 
   HealOpponents(this.sourceId, this.delta);
 }
 
-class InfectDamagePlayer extends PlayerEvent {
+class InfectDamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
   InfectDamagePlayer(this.targetId, this.delta);
 }
 
-class InfectDamagePlayers extends PlayerEvent {
+class InfectDamagePlayers extends PlayerHistoryEvent {
   final int delta;
 
   InfectDamagePlayers(this.delta);
 }
 
-class InfectDamageOpponents extends PlayerEvent {
+class InfectDamageOpponents extends PlayerHistoryEvent {
   final int attackerId;
   final int delta;
 
   InfectDamageOpponents(this.attackerId, this.delta);
 }
 
-class LifelinkDamagePlayer extends PlayerEvent {
+class LifelinkDamagePlayer extends PlayerHistoryEvent {
   final int attackerId;
   final int targetId;
   final int delta;
@@ -71,14 +74,14 @@ class LifelinkDamagePlayer extends PlayerEvent {
   LifelinkDamagePlayer(this.attackerId, this.targetId, this.delta);
 }
 
-class Extort extends PlayerEvent {
+class Extort extends PlayerHistoryEvent {
   final int attackerId;
   final int delta;
 
   Extort(this.attackerId, this.delta);
 }
 
-class CommanderDamage extends PlayerEvent {
+class CommanderDamage extends PlayerHistoryEvent {
   final int attackerId;
   final int targetId;
   final int delta;
@@ -86,20 +89,20 @@ class CommanderDamage extends PlayerEvent {
   CommanderDamage(this.attackerId, this.targetId, this.delta);
 }
 
-class DamagePlayers extends PlayerEvent {
+class DamagePlayers extends PlayerHistoryEvent {
   final int delta;
 
   DamagePlayers(this.delta);
 }
 
-class DamageOpponents extends PlayerEvent {
+class DamageOpponents extends PlayerHistoryEvent {
   final int delta;
   final int attackerId;
 
   DamageOpponents(this.attackerId, this.delta);
 }
 
-class PassTurn extends PlayerEvent {
+class PassTurn extends PlayerHistoryEvent {
   PassTurn();
 }
 
@@ -157,24 +160,20 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     on<UndoAction>((event, emit) {
       if (state.eventHistory.isEmpty) return;
 
-      // Remove last event
       final newHistory = List<PlayerEvent>.from(state.eventHistory)
         ..removeLast();
 
-      // Rebuild state from scratch by replaying events
       PlayersState rebuiltState = PlayersState(
         state.startingLife,
         _generatePlayers(state.players.length, state.startingLife),
         0,
-        [], // Start with empty history
+        [],
       );
 
-      // Replay all events
       for (final evt in newHistory) {
         rebuiltState = _applyEvent(rebuiltState, evt);
       }
 
-      // Set the history after replaying
       emit(rebuiltState.copyWith(eventHistory: newHistory));
     });
 
@@ -234,7 +233,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
   void _emitWithHistory(
     Emitter<PlayersState> emit,
     PlayersState newState,
-    PlayerEvent event,
+    PlayerHistoryEvent event,
   ) {
     final history = List<PlayerEvent>.from(state.eventHistory)..add(event);
     emit(newState.copyWith(eventHistory: history));
