@@ -236,7 +236,15 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     PlayerHistoryEvent event,
   ) {
     final history = List<PlayerEvent>.from(state.eventHistory)..add(event);
-    emit(newState.copyWith(eventHistory: history));
+    var stateToEmit = newState.copyWith(eventHistory: history);
+
+    // If current player died, automatically pass their turn
+    final currentPlayer = stateToEmit.players[stateToEmit.turnPlayerId];
+    if (currentPlayer != null && currentPlayer.isDead()) {
+      stateToEmit = _passTurn(stateToEmit, PassTurn());
+    }
+
+    emit(stateToEmit);
   }
 
   PlayersState _applyEvent(PlayersState currentState, PlayerEvent event) {
