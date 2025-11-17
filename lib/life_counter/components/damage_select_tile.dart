@@ -267,7 +267,9 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     bloc.add(event);
 
     if (_isCommanderDamage) {
-      bloc.add(CommanderDamage(source!, target, _damageAmount));
+      bloc.add(
+        CommanderDamage(source!, target, _damageAmount, isChildEvent: true),
+      );
     }
 
     setState(() {

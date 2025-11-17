@@ -1,11 +1,14 @@
-// blocs/life_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
 
 abstract class PlayerEvent {}
 
 // Events that should be tracked in history
-abstract class PlayerHistoryEvent extends PlayerEvent {}
+abstract class PlayerHistoryEvent extends PlayerEvent {
+  final bool isChildEvent;
+
+  PlayerHistoryEvent({this.isChildEvent = false});
+}
 
 class SetStartingLife extends PlayerEvent {
   final int startingLife;
@@ -23,47 +26,47 @@ class DamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  DamagePlayer(this.targetId, this.delta);
+  DamagePlayer(this.targetId, this.delta, {super.isChildEvent});
 }
 
 class HealPlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  HealPlayer(this.targetId, this.delta);
+  HealPlayer(this.targetId, this.delta, {super.isChildEvent});
 }
 
 class HealPlayers extends PlayerHistoryEvent {
   final int delta;
 
-  HealPlayers(this.delta);
+  HealPlayers(this.delta, {super.isChildEvent});
 }
 
 class HealOpponents extends PlayerHistoryEvent {
   final int sourceId;
   final int delta;
 
-  HealOpponents(this.sourceId, this.delta);
+  HealOpponents(this.sourceId, this.delta, {super.isChildEvent});
 }
 
 class InfectDamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  InfectDamagePlayer(this.targetId, this.delta);
+  InfectDamagePlayer(this.targetId, this.delta, {super.isChildEvent});
 }
 
 class InfectDamagePlayers extends PlayerHistoryEvent {
   final int delta;
 
-  InfectDamagePlayers(this.delta);
+  InfectDamagePlayers(this.delta, {super.isChildEvent});
 }
 
 class InfectDamageOpponents extends PlayerHistoryEvent {
   final int attackerId;
   final int delta;
 
-  InfectDamageOpponents(this.attackerId, this.delta);
+  InfectDamageOpponents(this.attackerId, this.delta, {super.isChildEvent});
 }
 
 class LifelinkDamagePlayer extends PlayerHistoryEvent {
@@ -71,14 +74,19 @@ class LifelinkDamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  LifelinkDamagePlayer(this.attackerId, this.targetId, this.delta);
+  LifelinkDamagePlayer(
+    this.attackerId,
+    this.targetId,
+    this.delta, {
+    super.isChildEvent,
+  });
 }
 
 class Extort extends PlayerHistoryEvent {
   final int attackerId;
   final int delta;
 
-  Extort(this.attackerId, this.delta);
+  Extort(this.attackerId, this.delta, {super.isChildEvent});
 }
 
 class CommanderDamage extends PlayerHistoryEvent {
@@ -86,24 +94,29 @@ class CommanderDamage extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  CommanderDamage(this.attackerId, this.targetId, this.delta);
+  CommanderDamage(
+    this.attackerId,
+    this.targetId,
+    this.delta, {
+    super.isChildEvent,
+  });
 }
 
 class DamagePlayers extends PlayerHistoryEvent {
   final int delta;
 
-  DamagePlayers(this.delta);
+  DamagePlayers(this.delta, {super.isChildEvent});
 }
 
 class DamageOpponents extends PlayerHistoryEvent {
   final int delta;
   final int attackerId;
 
-  DamageOpponents(this.attackerId, this.delta);
+  DamageOpponents(this.attackerId, this.delta, {super.isChildEvent});
 }
 
 class PassTurn extends PlayerHistoryEvent {
-  PassTurn();
+  PassTurn({super.isChildEvent});
 }
 
 class UndoAction extends PlayerEvent {}
@@ -112,7 +125,7 @@ class PlayersState {
   final int startingLife;
   final Map<int, Player> players;
   final int turnPlayerId;
-  final List<PlayerEvent> eventHistory;
+  final List<PlayerHistoryEvent> eventHistory;
 
   PlayersState(
     this.startingLife,
@@ -125,7 +138,7 @@ class PlayersState {
     int? startingLife,
     Map<int, Player>? players,
     int? turnPlayerId,
-    List<PlayerEvent>? eventHistory,
+    List<PlayerHistoryEvent>? eventHistory,
   }) => PlayersState(
     startingLife ?? this.startingLife,
     players ?? this.players,
@@ -160,9 +173,19 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     on<UndoAction>((event, emit) {
       if (state.eventHistory.isEmpty) return;
 
-      final newHistory = List<PlayerEvent>.from(state.eventHistory)
-        ..removeLast();
+      final newHistory = List<PlayerHistoryEvent>.from(state.eventHistory);
 
+      // Remove all trailing child events
+      while (newHistory.isNotEmpty && newHistory.last.isChildEvent) {
+        newHistory.removeLast();
+      }
+
+      // Remove the primary event
+      if (newHistory.isNotEmpty) {
+        newHistory.removeLast();
+      }
+
+      // Rebuild state from scratch by replaying all remaining events
       PlayersState rebuiltState = PlayersState(
         state.startingLife,
         _generatePlayers(state.players.length, state.startingLife),
@@ -235,19 +258,28 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     PlayersState newState,
     PlayerHistoryEvent event,
   ) {
-    final history = List<PlayerEvent>.from(state.eventHistory)..add(event);
+    final history = List<PlayerHistoryEvent>.from(state.eventHistory)
+      ..add(event);
     var stateToEmit = newState.copyWith(eventHistory: history);
 
     // If current player died, automatically pass their turn
     final currentPlayer = stateToEmit.players[stateToEmit.turnPlayerId];
     if (currentPlayer != null && currentPlayer.isDead()) {
-      stateToEmit = _passTurn(stateToEmit, PassTurn());
+      final passTurnEvent = PassTurn(isChildEvent: true);
+      stateToEmit = _passTurn(stateToEmit, passTurnEvent);
+      stateToEmit = stateToEmit.copyWith(
+        eventHistory: List<PlayerHistoryEvent>.from(stateToEmit.eventHistory)
+          ..add(passTurnEvent),
+      );
     }
 
     emit(stateToEmit);
   }
 
-  PlayersState _applyEvent(PlayersState currentState, PlayerEvent event) {
+  PlayersState _applyEvent(
+    PlayersState currentState,
+    PlayerHistoryEvent event,
+  ) {
     return switch (event) {
       PassTurn() => _passTurn(currentState, event),
       DamagePlayer() => _damagePlayer(currentState, event),
