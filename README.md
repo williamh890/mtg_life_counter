@@ -1,6 +1,7 @@
 # mtg_life_counter
 
-A new Flutter project.
+A mtg life counter app 
+https://williamh890.github.io/mtg_life_counter/
 
 ## Getting Started
 

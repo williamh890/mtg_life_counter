@@ -13,9 +13,9 @@ class InitializePostGame extends PostGameEvent {
   InitializePostGame(this.gameState);
 }
 
-class CancelPostGame extends PostGameEvent {
-  CancelPostGame();
-}
+class PreviousPostGameStep extends PostGameEvent {}
+
+class NextPostgameStep extends PostGameEvent {}
 
 class ToggleWinner extends PostGameEvent {
   final int playerId;
@@ -23,7 +23,19 @@ class ToggleWinner extends PostGameEvent {
   ToggleWinner(this.playerId);
 }
 
-class ConfirmWinners extends PostGameEvent {}
+class SetRating extends PostGameEvent {
+  final int playerId;
+  final GameRating? gameRating;
+
+  SetRating(this.playerId, this.gameRating);
+}
+
+class SetSaltiness extends PostGameEvent {
+  final int playerId;
+  final int? salt;
+
+  SetSaltiness(this.playerId, this.salt);
+}
 
 class PostGameState {
   final PostGamePhase phase;
@@ -78,20 +90,42 @@ class PostGameBloc extends Bloc<PostGameEvent, PostGameState> {
       );
     });
 
-    on<CancelPostGame>((event, emit) {
-      emit(
-        PostGameState(
-          phase: PostGamePhase.notStarted,
-          players: {},
-          ratings: {},
-          selectedWinners: {},
-        ),
-      );
+    on<PreviousPostGameStep>((event, emit) {
+      final previousPhase = switch (state.phase) {
+        PostGamePhase.completed => PostGamePhase.overview,
+        PostGamePhase.overview => PostGamePhase.rating,
+        PostGamePhase.rating => PostGamePhase.winners,
+        PostGamePhase.winners => PostGamePhase.notStarted,
+        PostGamePhase.notStarted => PostGamePhase.notStarted,
+      };
+
+      if (previousPhase == PostGamePhase.notStarted) {
+        emit(
+          PostGameState(
+            phase: PostGamePhase.notStarted,
+            players: {},
+            ratings: {},
+            selectedWinners: {},
+          ),
+        );
+      } else {
+        emit(state.copyWith(phase: previousPhase));
+      }
+    });
+
+    on<NextPostgameStep>((event, emit) {
+      final nextPhase = switch (state.phase) {
+        PostGamePhase.notStarted => PostGamePhase.winners,
+        PostGamePhase.winners => PostGamePhase.rating,
+        PostGamePhase.rating => PostGamePhase.overview,
+        PostGamePhase.overview => PostGamePhase.completed,
+        PostGamePhase.completed => PostGamePhase.notStarted,
+      };
+
+      emit(state.copyWith(phase: nextPhase));
     });
 
     on<ToggleWinner>((event, emit) {
-      if (state.phase != PostGamePhase.winners) return;
-
       final newSelectedWinners = Set<int>.from(state.selectedWinners);
 
       if (newSelectedWinners.contains(event.playerId)) {
@@ -103,10 +137,26 @@ class PostGameBloc extends Bloc<PostGameEvent, PostGameState> {
       emit(state.copyWith(selectedWinners: newSelectedWinners));
     });
 
-    on<ConfirmWinners>((event, emit) {
-      if (state.phase != PostGamePhase.winners) return;
+    on<SetRating>((event, emit) {
+      final updatedRatings = Map<int, PlayerRating>.from(state.ratings);
+      final currentRating = updatedRatings[event.playerId]!;
 
-      emit(state.copyWith(phase: PostGamePhase.rating));
+      updatedRatings[event.playerId] = currentRating.copyWith(
+        gameRating: event.gameRating,
+      );
+
+      emit(state.copyWith(ratings: updatedRatings));
+    });
+
+    on<SetSaltiness>((event, emit) {
+      final updatedRatings = Map<int, PlayerRating>.from(state.ratings);
+      final currentRating = updatedRatings[event.playerId]!;
+
+      updatedRatings[event.playerId] = currentRating.copyWith(
+        saltiness: event.salt,
+      );
+
+      emit(state.copyWith(ratings: updatedRatings));
     });
   }
 

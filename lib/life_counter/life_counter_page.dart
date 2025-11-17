@@ -173,29 +173,27 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          FloatingActionButton.extended(
+                          FloatingActionButton(
                             heroTag: 'cancel',
                             onPressed: () {
                               // Handle cancel
                               context.read<PostGameBloc>().add(
-                                CancelPostGame(),
+                                PreviousPostGameStep(),
                               );
                             },
-                            label: Text('Cancel'),
-                            icon: Icon(Icons.close),
                             backgroundColor: Colors.red,
+                            child: Icon(Icons.close),
                           ),
                           SizedBox(width: 16),
-                          FloatingActionButton.extended(
+                          FloatingActionButton(
                             heroTag: 'done',
                             onPressed: () {
                               // Handle done
                               context.read<PostGameBloc>().add(
-                                ConfirmWinners(),
+                                NextPostgameStep(),
                               );
                             },
-                            label: Text('Done'),
-                            icon: Icon(Icons.check),
+                            child: Icon(Icons.check),
                           ),
                         ],
                       )
@@ -313,7 +311,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
             player: player,
             isWinner: state.isWinner(player.id),
           ),
-          PostGamePhase.rating => RatingTile(playerId: player.id),
+          PostGamePhase.rating => RatingTile(
+            player: player,
+            rating: state.ratings[player.id]!,
+          ),
           PostGamePhase.overview => Text('overview'),
           PostGamePhase.completed => Text('Game over!'),
         };
