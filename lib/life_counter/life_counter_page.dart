@@ -105,7 +105,16 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    return BlocBuilder<PlayersBloc, PlayersState>(
+    return BlocConsumer<PlayersBloc, PlayersState>(
+      listenWhen: (previous, current) {
+        if (current.eventHistory.isEmpty) {
+          return false;
+        }
+        return current.eventHistory.last is PassTurn;
+      },
+      listener: (context, state) {
+        _cancelDamage();
+      },
       builder: (context, state) {
         final players = state.players;
         final playerIds = players.keys.toList();
