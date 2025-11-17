@@ -95,7 +95,8 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
               showSelectedIcon: false,
               segments: TargetSelect.values
                   .where((mode) {
-                    if (_isCommanderDamage) {
+                    if (_isCommanderDamage ||
+                        widget.targetId != widget.sourceId) {
                       return mode == TargetSelect.player;
                     }
                     return true;
