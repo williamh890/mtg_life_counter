@@ -1,0 +1,1 @@
+enum PostGamePhase { notStarted, winners, rating, overview, completed }

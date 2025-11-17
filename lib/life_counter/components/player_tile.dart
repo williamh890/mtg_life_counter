@@ -111,6 +111,16 @@ class PlayerTile extends StatelessWidget {
                 child: const Text('Pass Turn'),
               ),
             ),
+
+            IconButton(
+              icon: const Icon(Icons.done),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black, // Icon color
+              ),
+              tooltip: 'Finish',
+              onPressed: () => context.read<PlayersBloc>().add(FinishGame())
+            ),
           ],
         ),
       ),

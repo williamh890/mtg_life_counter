@@ -3,9 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mtg_life_counter/life_counter/blocs/postgame_bloc.dart';
 import 'package:mtg_life_counter/life_counter/components/damage_select_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/dead_player_tile.dart';
+import 'package:mtg_life_counter/life_counter/components/rating_tile.dart';
+import 'package:mtg_life_counter/life_counter/components/select_winner_tile.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
+import 'package:mtg_life_counter/life_counter/models/postgame_phase.dart';
 import 'blocs/players_bloc.dart';
 import 'components/player_tile.dart';
 
@@ -105,87 +109,114 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    return BlocConsumer<PlayersBloc, PlayersState>(
-      listenWhen: (previous, current) {
-        if (current.eventHistory.isEmpty) {
-          return false;
-        }
-        return current.eventHistory.last is PassTurn;
-      },
-      listener: (context, state) {
-        _cancelDamage();
-      },
-      builder: (context, state) {
-        final players = state.players;
-        final playerIds = players.keys.toList();
-        final columns = _getLayoutColumns(playerIds);
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PlayersBloc, PlayersState>(
+          listenWhen: (previous, current) {
+            if (current.eventHistory.isEmpty) return false;
+            return current.eventHistory.last is PassTurn;
+          },
+          listener: (context, state) {
+            _cancelDamage();
+          },
+        ),
+        BlocListener<PlayersBloc, PlayersState>(
+          listenWhen: (previous, current) {
+            return !previous.isGameFinished && current.isGameFinished;
+          },
+          listener: (context, state) {
+            context.read<PostGameBloc>().add(InitializePostGame(state));
+          },
+        ),
+        BlocListener<PostGameBloc, PostGameState>(
+          listenWhen: (previous, current) {
+            return previous.phase != PostGamePhase.notStarted &&
+                current.phase == PostGamePhase.notStarted;
+          },
+          listener: (_, state) {
+            context.read<PlayersBloc>().add(UndoAction());
+          },
+        ),
+      ],
+      child: BlocBuilder<PlayersBloc, PlayersState>(
+        builder: (context, state) {
+          final players = state.players;
+          final playerIds = players.keys.toList();
+          final columns = _getLayoutColumns(playerIds);
 
-        final playerTiles = Scaffold(
-          body: SafeArea(
-            child: SizedBox.expand(
-              child: Row(
-                children: columns.map((column) {
-                  return Flexible(
-                    flex: column.length + columns.length,
-                    child: Column(
-                      children: column.map((playerId) {
-                        final player = players[playerId]!;
-                        return Expanded(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onPanStart: (d) =>
-                                _startDrag(playerId, d.globalPosition),
-                            onPanUpdate: (d) => _updateDrag(d.globalPosition),
-                            onPanEnd: (_) {
-                              if (_dragCurrent != null) _endDrag(_dragCurrent!);
-                            },
-                            child: Container(
-                              key: _tileKeys[playerId],
-                              margin: EdgeInsets.zero,
-                              color: player.getColor(),
-                              child: SizedBox.expand(
-                                child: RotatedBox(
-                                  quarterTurns: _getPlayerQuarterTurns(
-                                    column,
-                                    playerId,
-                                  ),
-                                  child: _getPlayerTile(
-                                    player,
-                                    playerId,
-                                    state.turnPlayerId,
-                                  ),
-                                ),
-                              ),
-                            ),
+          return Stack(
+            children: [
+              Scaffold(
+                body: SafeArea(
+                  child: SizedBox.expand(
+                    child: Row(
+                      children: columns.map((column) {
+                        return Flexible(
+                          flex: column.length + columns.length,
+                          child: Column(
+                            children: column.map((playerId) {
+                              final player = players[playerId]!;
+                              return _buildPlayerTile(
+                                column,
+                                playerId,
+                                player,
+                                state,
+                              );
+                            }).toList(),
                           ),
                         );
                       }).toList(),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ),
+                floatingActionButton: state.isGameFinished
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          FloatingActionButton.extended(
+                            heroTag: 'cancel',
+                            onPressed: () {
+                              // Handle cancel
+                              context.read<PostGameBloc>().add(
+                                CancelPostGame(),
+                              );
+                            },
+                            label: Text('Cancel'),
+                            icon: Icon(Icons.close),
+                            backgroundColor: Colors.red,
+                          ),
+                          SizedBox(width: 16),
+                          FloatingActionButton.extended(
+                            heroTag: 'done',
+                            onPressed: () {
+                              // Handle done
+                              context.read<PostGameBloc>().add(
+                                ConfirmWinners(),
+                              );
+                            },
+                            label: Text('Done'),
+                            icon: Icon(Icons.check),
+                          ),
+                        ],
+                      )
+                    : null,
               ),
-            ),
-          ),
-        );
-
-        return Stack(
-          children: [
-            playerTiles,
-            if (_isDragging && _dragStart != null && _dragCurrent != null)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _ArrowPainter(
-                      start: _dragStart!,
-                      end: _dragCurrent!,
-                      curveUp: true,
+              if (_isDragging && _dragStart != null && _dragCurrent != null)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _ArrowPainter(
+                        start: _dragStart!,
+                        end: _dragCurrent!,
+                        curveUp: true,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -198,6 +229,44 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       DeviceOrientation.landscapeRight,
     ]);
     super.dispose();
+  }
+
+  Widget _buildPlayerTile(
+    List<int> column,
+    int playerId,
+    Player player,
+    PlayersState state,
+  ) {
+    final playerTile = Container(
+      key: _tileKeys[playerId],
+      margin: EdgeInsets.zero,
+      color: player.getColor(),
+      child: SizedBox.expand(
+        child: RotatedBox(
+          quarterTurns: _getPlayerQuarterTurns(column, playerId),
+          child: Stack(
+            children: [
+              _getPlayerGameTile(player, playerId, state.turnPlayerId),
+              if (state.isGameFinished) _getPlayerPostGameTile(player),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return Expanded(
+      child: state.isGameFinished
+          ? playerTile
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (d) => _startDrag(playerId, d.globalPosition),
+              onPanUpdate: (d) => _updateDrag(d.globalPosition),
+              onPanEnd: (_) {
+                if (_dragCurrent != null) _endDrag(_dragCurrent!);
+              },
+              child: playerTile,
+            ),
+    );
   }
 
   List<List<int>> _getLayoutColumns(List<int> playerIds) {
@@ -218,7 +287,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     return columns;
   }
 
-  Widget _getPlayerTile(Player player, int index, int turnPlayerId) {
+  Widget _getPlayerGameTile(Player player, int index, int turnPlayerId) {
     final isDamageMode = _damageTargetIndex == index;
 
     if (player.isDead()) {
@@ -233,6 +302,23 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     } else {
       return PlayerTile(player: player, isPlayersTurn: turnPlayerId == index);
     }
+  }
+
+  Widget _getPlayerPostGameTile(Player player) {
+    return BlocBuilder<PostGameBloc, PostGameState>(
+      builder: (context, state) {
+        return switch (state.phase) {
+          PostGamePhase.notStarted => Text('Not started'),
+          PostGamePhase.winners => SelectWinnerTile(
+            player: player,
+            isWinner: state.isWinner(player.id),
+          ),
+          PostGamePhase.rating => RatingTile(playerId: player.id),
+          PostGamePhase.overview => Text('overview'),
+          PostGamePhase.completed => Text('Game over!'),
+        };
+      },
+    );
   }
 
   void _cancelDamage() => setState(() {

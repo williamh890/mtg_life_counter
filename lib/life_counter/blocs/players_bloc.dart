@@ -17,6 +17,8 @@ class StartGame extends PlayerEvent {
   StartGame(this.playerCount, this.startingLifeTotal);
 }
 
+class FinishGame extends PlayerHistoryEvent {}
+
 class DamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
@@ -142,6 +144,8 @@ class PlayersState {
   );
 
   bool get canUndo => eventHistory.isNotEmpty;
+  bool get isGameFinished =>
+      eventHistory.isNotEmpty && eventHistory.last is FinishGame;
 }
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
@@ -159,6 +163,10 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
         event.startingLifeTotal,
       );
       emit(PlayersState(state.startingLife, players, 0, []));
+    });
+
+    on<FinishGame>((event, emit) {
+      _emitWithHistory(emit, state, event);
     });
 
     on<UndoAction>((event, emit) {
@@ -285,6 +293,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       LifelinkDamagePlayer() => _lifelinkDamagePlayer(currentState, event),
       Extort() => _extort(currentState, event),
       CommanderDamage() => _commanderDamage(currentState, event),
+      FinishGame() => currentState,
     };
   }
 
