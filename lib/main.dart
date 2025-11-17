@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 import 'package:mtg_life_counter/life_counter/life_counter_page.dart';
+import 'package:mtg_life_counter/player_setup/blocs/game_setup_bloc.dart';
 import 'player_setup/player_setup_page.dart';
 import 'package:flutter/rendering.dart';
 
@@ -18,8 +19,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => PlayersBloc(startingLife: 40, playerCount: 4),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => GameSetupBloc()),
+        BlocProvider(
+          create: (_) => PlayersBloc(startingLife: 40, playerCount: 4),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         onGenerateRoute: _appRouter.onGenerateRoute,

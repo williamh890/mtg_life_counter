@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mtg_life_counter/player_setup/blocs/game_setup_bloc.dart';
 import '../life_counter/blocs/players_bloc.dart';
 
 class PlayerSetupPage extends StatelessWidget {
@@ -18,7 +19,7 @@ class PlayerSetupPage extends StatelessWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            BlocBuilder<PlayersBloc, PlayersState>(
+            BlocBuilder<GameSetupBloc, GameSetupState>(
               builder: (context, state) => _startingLifeSelector(context),
             ),
             const SizedBox(height: 20),
@@ -28,12 +29,20 @@ class PlayerSetupPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            BlocBuilder<PlayersBloc, PlayersState>(
+            BlocBuilder<GameSetupBloc, GameSetupState>(
               builder: (context, state) => _playerCountSelector(context),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () {
+                final gameSetupBloc = context.read<GameSetupBloc>();
+
+                context.read<PlayersBloc>().add(
+                  StartGame(
+                    gameSetupBloc.state.playerCount,
+                    gameSetupBloc.state.startingLife,
+                  ),
+                );
                 Navigator.pushNamed(context, '/life_counter');
               },
               child: const Text('Start Game'),
@@ -46,7 +55,7 @@ class PlayerSetupPage extends StatelessWidget {
 
   Widget _playerCountSelector(BuildContext context) {
     final maxPlayers = 6;
-    final bloc = context.read<PlayersBloc>();
+    final bloc = context.read<GameSetupBloc>();
 
     return SegmentedButton<int>(
       segments: List.generate(maxPlayers, (i) {
@@ -60,16 +69,16 @@ class PlayerSetupPage extends StatelessWidget {
         padding: WidgetStateProperty.all(EdgeInsets.symmetric(horizontal: 12)),
       ),
       showSelectedIcon: false,
-      selected: <int>{bloc.state.players.length},
+      selected: <int>{bloc.state.playerCount},
       onSelectionChanged: (Set<int> newSelection) {
         final playerCount = newSelection.first;
-        bloc.add(ResetPlayers(playerCount));
+        bloc.add(SetPlayerCount(playerCount));
       },
     );
   }
 
   Widget _startingLifeSelector(BuildContext context) {
-    final bloc = context.read<PlayersBloc>();
+    final bloc = context.read<GameSetupBloc>();
     final startingLifes = [20, 25, 40];
 
     return SegmentedButton<int>(

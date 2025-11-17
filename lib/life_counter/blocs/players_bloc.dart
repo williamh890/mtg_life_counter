@@ -4,22 +4,17 @@ import 'package:mtg_life_counter/life_counter/models/player.dart';
 abstract class PlayerEvent {}
 
 // Events that should be tracked in history
-abstract class PlayerHistoryEvent extends PlayerEvent {
+sealed class PlayerHistoryEvent extends PlayerEvent {
   final bool isChildEvent;
 
   PlayerHistoryEvent({this.isChildEvent = false});
 }
 
-class SetStartingLife extends PlayerEvent {
-  final int startingLife;
-
-  SetStartingLife(this.startingLife);
-}
-
-class ResetPlayers extends PlayerEvent {
+class StartGame extends PlayerEvent {
   final int playerCount;
+  final int startingLifeTotal;
 
-  ResetPlayers(this.playerCount);
+  StartGame(this.playerCount, this.startingLifeTotal);
 }
 
 class DamagePlayer extends PlayerHistoryEvent {
@@ -158,16 +153,12 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           0,
         ),
       ) {
-    on<ResetPlayers>((event, emit) {
-      final players = _generatePlayers(event.playerCount, state.startingLife);
-      emit(PlayersState(state.startingLife, players, 0, []));
-    });
-
-    on<SetStartingLife>((event, emit) {
-      final players = state.players.map(
-        (id, player) => MapEntry(id, player.copyWith(life: event.startingLife)),
+    on<StartGame>((event, emit) {
+      final players = _generatePlayers(
+        event.playerCount,
+        event.startingLifeTotal,
       );
-      emit(PlayersState(event.startingLife, players, state.turnPlayerId, []));
+      emit(PlayersState(state.startingLife, players, 0, []));
     });
 
     on<UndoAction>((event, emit) {
@@ -294,7 +285,6 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       LifelinkDamagePlayer() => _lifelinkDamagePlayer(currentState, event),
       Extort() => _extort(currentState, event),
       CommanderDamage() => _commanderDamage(currentState, event),
-      _ => currentState,
     };
   }
 
