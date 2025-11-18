@@ -138,6 +138,14 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
             context.read<PlayersBloc>().add(UndoAction());
           },
         ),
+        BlocListener<PostGameBloc, PostGameState>(
+          listenWhen: (previous, current) {
+            return current.phase == PostGamePhase.completed;
+          },
+          listener: (context, _) {
+            Navigator.pop(context);
+          },
+        ),
       ],
       child: BlocBuilder<PlayersBloc, PlayersState>(
         builder: (context, state) {
