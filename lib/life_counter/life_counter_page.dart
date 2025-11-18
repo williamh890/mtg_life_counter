@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/postgame_bloc.dart';
 import 'package:mtg_life_counter/life_counter/components/damage_select_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/dead_player_tile.dart';
+import 'package:mtg_life_counter/life_counter/components/game_overview_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/rating_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/select_winner_tile.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
@@ -229,6 +230,24 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     super.dispose();
   }
 
+  List<List<int>> _getLayoutColumns(List<int> playerIds) {
+    List<List<int>> columns = [];
+    List<int> column = [];
+    final len = playerIds.length;
+
+    for (var r = 0; 2 * r < len; r++) {
+      if ((r + 1) * 2 <= len) {
+        column.add(r);
+      }
+      column.add(len - r - 1);
+
+      columns.add(column);
+      column = [];
+    }
+
+    return columns;
+  }
+
   Widget _buildPlayerTile(
     List<int> column,
     int playerId,
@@ -267,24 +286,6 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     );
   }
 
-  List<List<int>> _getLayoutColumns(List<int> playerIds) {
-    List<List<int>> columns = [];
-    List<int> column = [];
-    final len = playerIds.length;
-
-    for (var r = 0; 2 * r < len; r++) {
-      if ((r + 1) * 2 <= len) {
-        column.add(r);
-      }
-      column.add(len - r - 1);
-
-      columns.add(column);
-      column = [];
-    }
-
-    return columns;
-  }
-
   Widget _getPlayerGameTile(Player player, int index, int turnPlayerId) {
     final isDamageMode = _damageTargetIndex == index;
 
@@ -315,7 +316,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
             player: player,
             rating: state.ratings[player.id]!,
           ),
-          PostGamePhase.overview => Text('overview'),
+          PostGamePhase.overview => GameOverviewTile(player: player),
           PostGamePhase.completed => Text('Game over!'),
         };
       },
