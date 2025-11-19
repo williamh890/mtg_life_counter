@@ -146,6 +146,8 @@ class PlayersState {
   bool get canUndo => eventHistory.isNotEmpty;
   bool get isGameFinished =>
       eventHistory.isNotEmpty && eventHistory.last is FinishGame;
+  bool get allPlayersAreDead =>
+      players.values.every((player) => player.isDead());
 }
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
@@ -263,7 +265,9 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
 
     // If current player died, automatically pass their turn
     final currentPlayer = stateToEmit.players[stateToEmit.turnPlayerId];
-    if (currentPlayer != null && currentPlayer.isDead()) {
+    if (currentPlayer != null &&
+        currentPlayer.isDead() &&
+        !stateToEmit.allPlayersAreDead) {
       final passTurnEvent = PassTurn(isChildEvent: true);
       stateToEmit = _passTurn(stateToEmit, passTurnEvent);
       stateToEmit = stateToEmit.copyWith(

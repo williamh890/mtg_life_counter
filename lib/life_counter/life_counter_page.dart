@@ -178,35 +178,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                     ),
                   ),
                 ),
-                floatingActionButton: state.isGameFinished
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          FloatingActionButton(
-                            heroTag: 'cancel',
-                            onPressed: () {
-                              // Handle cancel
-                              context.read<PostGameBloc>().add(
-                                PreviousPostGameStep(),
-                              );
-                            },
-                            backgroundColor: Colors.red,
-                            child: Icon(Icons.close),
-                          ),
-                          SizedBox(width: 16),
-                          FloatingActionButton(
-                            heroTag: 'done',
-                            onPressed: () {
-                              // Handle done
-                              context.read<PostGameBloc>().add(
-                                NextPostgameStep(),
-                              );
-                            },
-                            child: Icon(Icons.check),
-                          ),
-                        ],
-                      )
-                    : null,
+                floatingActionButton: _getActionButtons(context, state),
               ),
               if (_isDragging && _dragStart != null && _dragCurrent != null)
                 Positioned.fill(
@@ -236,6 +208,63 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
       DeviceOrientation.landscapeRight,
     ]);
     super.dispose();
+  }
+
+  Widget? _getActionButtons(BuildContext context, PlayersState state) {
+    if (!state.isGameFinished && !state.allPlayersAreDead) {
+      return null;
+    }
+
+    if (state.isGameFinished) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'cancel',
+            onPressed: () {
+              context.read<PostGameBloc>().add(PreviousPostGameStep());
+            },
+            backgroundColor: Colors.red,
+            child: Icon(Icons.close),
+          ),
+          SizedBox(width: 16),
+          FloatingActionButton(
+            heroTag: 'done',
+            onPressed: () {
+              // Handle done
+              context.read<PostGameBloc>().add(NextPostgameStep());
+            },
+            child: Icon(Icons.check),
+          ),
+        ],
+      );
+    }
+
+    if (state.allPlayersAreDead) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'cancel',
+            onPressed: () {
+              context.read<PlayersBloc>().add(UndoAction());
+            },
+            backgroundColor: Colors.white,
+            child: Icon(Icons.undo),
+          ),
+          SizedBox(width: 16),
+          FloatingActionButton(
+            heroTag: 'done',
+            onPressed: () {
+              context.read<PlayersBloc>().add(FinishGame());
+            },
+            child: Icon(Icons.check),
+          ),
+        ],
+      );
+    }
+
+    return null;
   }
 
   List<List<int>> _getLayoutColumns(List<int> playerIds) {
