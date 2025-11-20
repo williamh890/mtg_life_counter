@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,18 +30,7 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
   TargetSelect _targetSelectMode = TargetSelect.player;
   bool _isCommanderDamage = false;
   int _damageAmount = 0;
-
-  void _increaseDamage() {
-    setState(() {
-      _damageAmount += 1;
-    });
-  }
-
-  void _decreaseDamage() {
-    setState(() {
-      _damageAmount = math.max(0, _damageAmount - 1);
-    });
-  }
+  Timer? _holdTimer;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +109,27 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     final damageAdjustRow = Expanded(
       child: Stack(
         children: [
-          // Background row with buttons taking full left/right halves
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.remove, size: 64, color: Colors.white),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    '$_damageAmount',
+                    style: const TextStyle(
+                      fontSize: 64,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.add, size: 64, color: Colors.white),
+              ],
+            ),
+          ),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.max,
@@ -131,20 +140,14 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                 flex: 1,
                 child: Material(
                   color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _decreaseDamage,
-                    splashColor: Colors.white24,
-                    highlightColor: Colors.white10,
-                    child: const Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 24),
-                        child: Icon(
-                          Icons.remove,
-                          size: 64,
-                          color: Colors.white,
-                        ),
-                      ),
+                  child: GestureDetector(
+                    onLongPressStart: (_) => _startDecreasing(),
+                    onLongPressEnd: (_) => _stopHolding(),
+                    child: InkWell(
+                      onTap: _decreaseDamage,
+                      splashColor: Colors.white24,
+                      highlightColor: Colors.white10,
+                      child: Container(), // Empty tap target
                     ),
                   ),
                 ),
@@ -154,36 +157,25 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
                 flex: 1,
                 child: Material(
                   color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _increaseDamage,
-                    splashColor: Colors.white24,
-                    highlightColor: Colors.white10,
-                    child: const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: EdgeInsets.only(left: 24),
-                        child: Icon(Icons.add, size: 64, color: Colors.white),
-                      ),
+                  child: GestureDetector(
+                    onLongPressStart: (_) => _startIncreasing(),
+                    onLongPressEnd: (_) => _stopHolding(),
+                    child: InkWell(
+                      onTap: _increaseDamage,
+                      splashColor: Colors.white24,
+                      highlightColor: Colors.white10,
+                      child: Container(), // Empty tap target
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          // Damage amount centered on top
-          Center(
-            child: Text(
-              '$_damageAmount',
-              style: const TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
+          // Centered content: - amount +
         ],
       ),
     );
+
     final confirmButtonsRow = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -216,6 +208,46 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
         children: [damageTypeSelectorRow, damageAdjustRow, confirmButtonsRow],
       ),
     );
+  }
+
+  void _startIncreasing() {
+    setState(() {
+      // Round to nearest multiple of 5, then add 5
+      _damageAmount = ((_damageAmount / 5).round() * 5) + 5;
+    });
+    _holdTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+      _increaseDamage(5);
+    });
+  }
+
+  void _startDecreasing() {
+    setState(() {
+      // Round to nearest multiple of 5, then subtract 5
+      _damageAmount = ((_damageAmount / 5).round() * 5) - 5;
+      _damageAmount = _damageAmount.clamp(0, double.infinity).toInt();
+    });
+    _holdTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+      _decreaseDamage(5);
+    });
+  }
+
+  void _stopHolding() {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+  }
+
+  void _increaseDamage([int amount = 1]) {
+    setState(() {
+      _damageAmount += amount;
+    });
+  }
+
+  void _decreaseDamage([int amount = 1]) {
+    setState(() {
+      _damageAmount = (_damageAmount - amount)
+          .clamp(0, double.infinity)
+          .toInt();
+    });
   }
 
   _applyDamage() {
@@ -288,5 +320,11 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     } else {
       return damageMode.label;
     }
+  }
+
+  @override
+  void dispose() {
+    _holdTimer?.cancel();
+    super.dispose();
   }
 }
