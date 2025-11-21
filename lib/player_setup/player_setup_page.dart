@@ -11,43 +11,65 @@ class PlayerSetupPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Game Settings')),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Starting Life Total',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            BlocBuilder<GameSetupBloc, GameSetupState>(
-              builder: (context, state) => _startingLifeSelector(context),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Choose Player Count',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-
-            BlocBuilder<GameSetupBloc, GameSetupState>(
-              builder: (context, state) => _playerCountSelector(context),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                final gameSetupBloc = context.read<GameSetupBloc>();
-
-                context.read<PlayersBloc>().add(
-                  StartGame(
-                    gameSetupBloc.state.playerCount,
-                    gameSetupBloc.state.startingLife,
-                  ),
+        child: BlocBuilder<GameSetupBloc, GameSetupState>(
+          builder: (context, gameSetupState) {
+            return BlocBuilder<PlayersBloc, PlayersState>(
+              builder: (context, playersState) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Starting Life Total',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _startingLifeSelector(context),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Choose Player Count',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _playerCountSelector(context),
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<PlayersBloc>().add(
+                              StartGame(
+                                gameSetupState.playerCount,
+                                gameSetupState.startingLife,
+                              ),
+                            );
+                            Navigator.pushNamed(context, '/life_counter');
+                          },
+                          child: const Text('Start Game'),
+                        ),
+                        if (playersState.eventHistory.isNotEmpty &&
+                            !playersState.isGameFinished) ...[
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/life_counter');
+                            },
+                            child: const Text('Continue...'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 );
-                Navigator.pushNamed(context, '/life_counter');
               },
-              child: const Text('Start Game'),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
