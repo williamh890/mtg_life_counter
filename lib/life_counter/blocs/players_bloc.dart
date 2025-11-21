@@ -312,106 +312,144 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     return state.copyWith(turnPlayerId: nextPlayerId);
   }
 
-  PlayersState _damagePlayer(PlayersState state, DamagePlayer event) {
+  // Helper: Update a single player if alive
+  PlayersState _updateSinglePlayer(
+    PlayersState state,
+    int targetId,
+    Player Function(Player player) update,
+  ) {
+    final player = state.players[targetId];
+    if (player == null || player.isDead()) {
+      return state;
+    }
+
     final players = Map<int, Player>.from(state.players)
-      ..update(
-        event.targetId,
-        (player) => player.copyWith(life: player.life - event.delta),
-      );
+      ..update(targetId, update);
     return state.copyWith(players: players);
   }
 
-  PlayersState _damagePlayers(PlayersState state, DamagePlayers event) {
+  // Helper: Update all alive players
+  PlayersState _updateAlivePlayers(
+    PlayersState state,
+    Player Function(Player player) update,
+  ) {
     final players = state.players.map(
-      (id, player) =>
-          MapEntry(id, player.copyWith(life: player.life - event.delta)),
+      (id, player) => MapEntry(id, player.isDead() ? player : update(player)),
     );
     return state.copyWith(players: players);
   }
 
-  PlayersState _damageOpponents(PlayersState state, DamageOpponents event) {
+  // Helper: Update all alive opponents (excluding one player)
+  PlayersState _updateOpponents(
+    PlayersState state,
+    int excludeId,
+    Player Function(Player player) update,
+  ) {
     final players = state.players.map(
       (id, player) => MapEntry(
         id,
-        id == event.attackerId
-            ? player
-            : player.copyWith(life: player.life - event.delta),
+        player.isDead() || id == excludeId ? player : update(player),
       ),
     );
     return state.copyWith(players: players);
+  }
+
+  // Single target operations
+  PlayersState _damagePlayer(PlayersState state, DamagePlayer event) {
+    return _updateSinglePlayer(
+      state,
+      event.targetId,
+      (player) => player.copyWith(life: player.life - event.delta),
+    );
   }
 
   PlayersState _healPlayer(PlayersState state, HealPlayer event) {
-    final players = Map<int, Player>.from(state.players)
-      ..update(
-        event.targetId,
-        (player) => player.copyWith(life: player.life + event.delta),
-      );
-    return state.copyWith(players: players);
-  }
-
-  PlayersState _healPlayers(PlayersState state, HealPlayers event) {
-    final players = state.players.map(
-      (id, player) =>
-          MapEntry(id, player.copyWith(life: player.life + event.delta)),
+    return _updateSinglePlayer(
+      state,
+      event.targetId,
+      (player) => player.copyWith(life: player.life + event.delta),
     );
-    return state.copyWith(players: players);
-  }
-
-  PlayersState _healOpponents(PlayersState state, HealOpponents event) {
-    final players = state.players.map(
-      (id, player) => MapEntry(
-        id,
-        id == event.sourceId
-            ? player
-            : player.copyWith(life: player.life + event.delta),
-      ),
-    );
-    return state.copyWith(players: players);
   }
 
   PlayersState _infectDamagePlayer(
     PlayersState state,
     InfectDamagePlayer event,
   ) {
-    final players = Map<int, Player>.from(state.players)
-      ..update(
-        event.targetId,
-        (player) => player.copyWith(infect: player.infect + event.delta),
-      );
-    return state.copyWith(players: players);
+    return _updateSinglePlayer(
+      state,
+      event.targetId,
+      (player) => player.copyWith(infect: player.infect + event.delta),
+    );
+  }
+
+  // All players operations
+  PlayersState _damagePlayers(PlayersState state, DamagePlayers event) {
+    return _updateAlivePlayers(
+      state,
+      (player) => player.copyWith(life: player.life - event.delta),
+    );
+  }
+
+  PlayersState _healPlayers(PlayersState state, HealPlayers event) {
+    return _updateAlivePlayers(
+      state,
+      (player) => player.copyWith(life: player.life + event.delta),
+    );
   }
 
   PlayersState _infectDamagePlayers(
     PlayersState state,
     InfectDamagePlayers event,
   ) {
-    final players = state.players.map(
-      (id, player) =>
-          MapEntry(id, player.copyWith(infect: player.infect + event.delta)),
+    return _updateAlivePlayers(
+      state,
+      (player) => player.copyWith(infect: player.infect + event.delta),
     );
-    return state.copyWith(players: players);
+  }
+
+  // Opponents operations
+  PlayersState _damageOpponents(PlayersState state, DamageOpponents event) {
+    return _updateOpponents(
+      state,
+      event.attackerId,
+      (player) => player.copyWith(life: player.life - event.delta),
+    );
+  }
+
+  PlayersState _healOpponents(PlayersState state, HealOpponents event) {
+    return _updateOpponents(
+      state,
+      event.sourceId,
+      (player) => player.copyWith(life: player.life + event.delta),
+    );
   }
 
   PlayersState _infectDamageOpponents(
     PlayersState state,
     InfectDamageOpponents event,
   ) {
-    final players = state.players.map(
-      (id, player) => MapEntry(
-        id,
-        id == event.attackerId
-            ? player
-            : player.copyWith(infect: player.infect + event.delta),
-      ),
+    return _updateOpponents(
+      state,
+      event.attackerId,
+      (player) => player.copyWith(infect: player.infect + event.delta),
     );
-    return state.copyWith(players: players);
   }
 
+  // Special operations
   PlayersState _lifelinkDamagePlayer(
     PlayersState state,
     LifelinkDamagePlayer event,
   ) {
+    final target = state.players[event.targetId];
+    final attacker = state.players[event.attackerId];
+
+    if (target == null ||
+        target.isDead() ||
+        attacker == null ||
+        attacker.isDead()) {
+      return state;
+    }
+
     final players = Map<int, Player>.from(state.players)
       ..update(
         event.targetId,
@@ -425,32 +463,39 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
   }
 
   PlayersState _extort(PlayersState state, Extort event) {
-    final numOpponents = state.players.length - 1;
+    final attacker = state.players[event.attackerId];
+    if (attacker == null || attacker.isDead()) {
+      return state;
+    }
+
+    final numAliveOpponents =
+        state.players.values.where((p) => !p.isDead()).length - 1;
 
     final players = state.players.map(
       (id, player) => MapEntry(
         id,
         id == event.attackerId
-            ? player.copyWith(life: player.life + event.delta * numOpponents)
-            : player.copyWith(life: player.life - event.delta),
+            ? player.copyWith(
+                life: player.life + event.delta * numAliveOpponents,
+              )
+            : (player.isDead()
+                  ? player
+                  : player.copyWith(life: player.life - event.delta)),
       ),
     );
     return state.copyWith(players: players);
   }
 
   PlayersState _commanderDamage(PlayersState state, CommanderDamage event) {
-    final players = Map<int, Player>.from(state.players)
-      ..update(event.targetId, (player) {
-        final commanderDamage = Map<int, int>.from(player.commanderDamage)
-          ..update(
-            event.attackerId,
-            (value) => value + event.delta,
-            ifAbsent: () => event.delta,
-          );
-
-        return player.copyWith(commanderDamage: commanderDamage);
-      });
-    return state.copyWith(players: players);
+    return _updateSinglePlayer(state, event.targetId, (player) {
+      final commanderDamage = Map<int, int>.from(player.commanderDamage)
+        ..update(
+          event.attackerId,
+          (value) => value + event.delta,
+          ifAbsent: () => event.delta,
+        );
+      return player.copyWith(commanderDamage: commanderDamage);
+    });
   }
 
   static Map<int, Player> _generatePlayers(int playerCount, int startingLife) =>
