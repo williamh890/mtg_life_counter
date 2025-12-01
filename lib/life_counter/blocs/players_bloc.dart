@@ -1,13 +1,48 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
 
-abstract class PlayerEvent {}
-
-// Events that should be tracked in history
-sealed class PlayerHistoryEvent extends PlayerEvent {
+class EventMetadata {
+  final int sourcePlayerId;
+  final DateTime timestamp;
   final bool isChildEvent;
 
-  PlayerHistoryEvent({this.isChildEvent = false});
+  EventMetadata({
+    required this.sourcePlayerId,
+    DateTime? timestamp,
+    this.isChildEvent = false,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  factory EventMetadata.now({
+    required int sourcePlayerId,
+    bool isChildEvent = false,
+  }) {
+    return EventMetadata(
+      sourcePlayerId: sourcePlayerId,
+      isChildEvent: isChildEvent,
+    );
+  }
+
+  EventMetadata copyWith({
+    int? sourcePlayerId,
+    DateTime? timestamp,
+    bool? isChildEvent,
+  }) {
+    return EventMetadata(
+      sourcePlayerId: sourcePlayerId ?? this.sourcePlayerId,
+      timestamp: timestamp ?? this.timestamp,
+      isChildEvent: isChildEvent ?? this.isChildEvent,
+    );
+  }
+}
+
+abstract class PlayerEvent {}
+
+sealed class PlayerHistoryEvent extends PlayerEvent {
+  final EventMetadata metadata;
+
+  PlayerHistoryEvent({required this.metadata});
+
+  bool get isChildEvent => metadata.isChildEvent;
 }
 
 class StartGame extends PlayerEvent {
@@ -17,53 +52,55 @@ class StartGame extends PlayerEvent {
   StartGame(this.playerCount, this.startingLifeTotal);
 }
 
-class FinishGame extends PlayerHistoryEvent {}
+class FinishGame extends PlayerHistoryEvent {
+  FinishGame({required super.metadata});
+}
 
 class DamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  DamagePlayer(this.targetId, this.delta, {super.isChildEvent});
+  DamagePlayer(this.targetId, this.delta, {required super.metadata});
 }
 
 class HealPlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  HealPlayer(this.targetId, this.delta, {super.isChildEvent});
+  HealPlayer(this.targetId, this.delta, {required super.metadata});
 }
 
 class HealPlayers extends PlayerHistoryEvent {
   final int delta;
 
-  HealPlayers(this.delta, {super.isChildEvent});
+  HealPlayers(this.delta, {required super.metadata});
 }
 
 class HealOpponents extends PlayerHistoryEvent {
   final int sourceId;
   final int delta;
 
-  HealOpponents(this.sourceId, this.delta, {super.isChildEvent});
+  HealOpponents(this.sourceId, this.delta, {required super.metadata});
 }
 
 class InfectDamagePlayer extends PlayerHistoryEvent {
   final int targetId;
   final int delta;
 
-  InfectDamagePlayer(this.targetId, this.delta, {super.isChildEvent});
+  InfectDamagePlayer(this.targetId, this.delta, {required super.metadata});
 }
 
 class InfectDamagePlayers extends PlayerHistoryEvent {
   final int delta;
 
-  InfectDamagePlayers(this.delta, {super.isChildEvent});
+  InfectDamagePlayers(this.delta, {required super.metadata});
 }
 
 class InfectDamageOpponents extends PlayerHistoryEvent {
   final int attackerId;
   final int delta;
 
-  InfectDamageOpponents(this.attackerId, this.delta, {super.isChildEvent});
+  InfectDamageOpponents(this.attackerId, this.delta, {required super.metadata});
 }
 
 class LifelinkDamagePlayer extends PlayerHistoryEvent {
@@ -75,7 +112,7 @@ class LifelinkDamagePlayer extends PlayerHistoryEvent {
     this.attackerId,
     this.targetId,
     this.delta, {
-    super.isChildEvent,
+    required super.metadata,
   });
 }
 
@@ -83,7 +120,7 @@ class Extort extends PlayerHistoryEvent {
   final int attackerId;
   final int delta;
 
-  Extort(this.attackerId, this.delta, {super.isChildEvent});
+  Extort(this.attackerId, this.delta, {required super.metadata});
 }
 
 class CommanderDamage extends PlayerHistoryEvent {
@@ -95,25 +132,25 @@ class CommanderDamage extends PlayerHistoryEvent {
     this.attackerId,
     this.targetId,
     this.delta, {
-    super.isChildEvent,
+    required super.metadata,
   });
 }
 
 class DamagePlayers extends PlayerHistoryEvent {
   final int delta;
 
-  DamagePlayers(this.delta, {super.isChildEvent});
+  DamagePlayers(this.delta, {required super.metadata});
 }
 
 class DamageOpponents extends PlayerHistoryEvent {
   final int delta;
   final int attackerId;
 
-  DamageOpponents(this.attackerId, this.delta, {super.isChildEvent});
+  DamageOpponents(this.attackerId, this.delta, {required super.metadata});
 }
 
 class PassTurn extends PlayerHistoryEvent {
-  PassTurn({super.isChildEvent});
+  PassTurn({required super.metadata});
 }
 
 class UndoAction extends PlayerEvent {}
@@ -151,7 +188,7 @@ class PlayersState {
 }
 
 class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
-  PlayersBloc({required startingLife, required int playerCount})
+  PlayersBloc({required int startingLife, required int playerCount})
     : super(
         PlayersState(
           startingLife,
@@ -268,7 +305,12 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     if (currentPlayer != null &&
         currentPlayer.isDead() &&
         !stateToEmit.allPlayersAreDead) {
-      final passTurnEvent = PassTurn(isChildEvent: true);
+      final passTurnEvent = PassTurn(
+        metadata: EventMetadata.now(
+          sourcePlayerId: stateToEmit.turnPlayerId,
+          isChildEvent: true,
+        ),
+      );
       stateToEmit = _passTurn(stateToEmit, passTurnEvent);
       stateToEmit = stateToEmit.copyWith(
         eventHistory: List<PlayerHistoryEvent>.from(stateToEmit.eventHistory)

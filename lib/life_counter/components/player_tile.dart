@@ -106,7 +106,8 @@ class PlayerTile extends StatelessWidget {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  context.read<PlayersBloc>().add(PassTurn());
+                  final metadata = EventMetadata.now(sourcePlayerId: player.id);
+                  context.read<PlayersBloc>().add(PassTurn(metadata: metadata));
                 },
                 child: const Text('Pass Turn'),
               ),
@@ -119,7 +120,11 @@ class PlayerTile extends StatelessWidget {
                 foregroundColor: Colors.black, // Icon color
               ),
               tooltip: 'Finish',
-              onPressed: () => context.read<PlayersBloc>().add(FinishGame())
+              onPressed: () => context.read<PlayersBloc>().add(
+                FinishGame(
+                  metadata: EventMetadata.now(sourcePlayerId: player.id),
+                ),
+              ),
             ),
           ],
         ),

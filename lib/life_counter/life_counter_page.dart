@@ -256,7 +256,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           FloatingActionButton(
             heroTag: 'done',
             onPressed: () {
-              context.read<PlayersBloc>().add(FinishGame());
+              context.read<PlayersBloc>().add(FinishGame(
+                metadata: EventMetadata.now(sourcePlayerId: state.turnPlayerId)
+
+              ));
             },
             child: Icon(Icons.check),
           ),

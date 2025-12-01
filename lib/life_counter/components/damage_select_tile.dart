@@ -258,42 +258,64 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
       return;
     }
 
+    if (source == null) {
+      return;
+    }
+    final eventMetadata = EventMetadata.now(sourcePlayerId: source);
     final event = switch ((_selectedDamageMode, _targetSelectMode)) {
       (DamageMode.damage, TargetSelect.player) => DamagePlayer(
         target,
         _damageAmount,
+        metadata: eventMetadata,
       ),
-      (DamageMode.damage, TargetSelect.players) => DamagePlayers(_damageAmount),
-      (DamageMode.damage, TargetSelect.opponents) => DamageOpponents(
-        source!,
+      (DamageMode.damage, TargetSelect.players) => DamagePlayers(
         _damageAmount,
+        metadata: eventMetadata,
+      ),
+      (DamageMode.damage, TargetSelect.opponents) => DamageOpponents(
+        source,
+        _damageAmount,
+        metadata: eventMetadata,
       ),
       (DamageMode.healing, TargetSelect.player) => HealPlayer(
         target,
         _damageAmount,
+        metadata: eventMetadata,
       ),
-      (DamageMode.healing, TargetSelect.players) => HealPlayers(_damageAmount),
-      (DamageMode.healing, TargetSelect.opponents) => HealOpponents(
-        source!,
+      (DamageMode.healing, TargetSelect.players) => HealPlayers(
         _damageAmount,
+        metadata: eventMetadata,
+      ),
+      (DamageMode.healing, TargetSelect.opponents) => HealOpponents(
+        source,
+        _damageAmount,
+        metadata: eventMetadata,
       ),
       (DamageMode.infect, TargetSelect.player) => InfectDamagePlayer(
         target,
         _damageAmount,
+        metadata: eventMetadata,
       ),
       (DamageMode.infect, TargetSelect.players) => InfectDamagePlayers(
         _damageAmount,
+        metadata: eventMetadata,
       ),
       (DamageMode.infect, TargetSelect.opponents) => InfectDamageOpponents(
-        source!,
+        source,
         _damageAmount,
+        metadata: eventMetadata,
       ),
       (DamageMode.lifelink, TargetSelect.player) => LifelinkDamagePlayer(
-        source!,
+        source,
         target,
         _damageAmount,
+        metadata: eventMetadata,
       ),
-      (DamageMode.lifelink, _) => Extort(source!, _damageAmount),
+      (DamageMode.lifelink, _) => Extort(
+        source,
+        _damageAmount,
+        metadata: eventMetadata,
+      ),
     };
 
     final bloc = context.read<PlayersBloc>();
@@ -301,7 +323,15 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
 
     if (_isCommanderDamage) {
       bloc.add(
-        CommanderDamage(source!, target, _damageAmount, isChildEvent: true),
+        CommanderDamage(
+          source,
+          target,
+          _damageAmount,
+          metadata: EventMetadata.now(
+            sourcePlayerId: source,
+            isChildEvent: true,
+          ),
+        ),
       );
     }
 
