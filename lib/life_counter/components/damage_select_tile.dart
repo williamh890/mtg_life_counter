@@ -254,13 +254,15 @@ class _DamageSelectTileState extends State<DamageSelectTile> {
     final target = widget.targetId;
     final source = widget.sourceId;
 
-    if (target == null) {
+    if (target == null || source == null) {
       return;
     }
 
-    if (source == null) {
+    if (_damageAmount == 0) {
+      widget.onDone();
       return;
     }
+
     final eventMetadata = EventMetadata.now(sourcePlayerId: source);
     final event = switch ((_selectedDamageMode, _targetSelectMode)) {
       (DamageMode.damage, TargetSelect.player) => DamagePlayer(

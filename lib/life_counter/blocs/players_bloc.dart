@@ -318,6 +318,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
 
     // If current player died, automatically pass their turn
     final currentPlayer = stateToEmit.players[stateToEmit.turnPlayerId];
+
     if (currentPlayer != null &&
         currentPlayer.isDead() &&
         !stateToEmit.allPlayersAreDead) {
@@ -327,6 +328,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           isChildEvent: true,
         ),
       );
+
       stateToEmit = _passTurn(stateToEmit, passTurnEvent);
       stateToEmit = stateToEmit.copyWith(
         eventHistory: List<PlayerHistoryEvent>.from(stateToEmit.eventHistory)
