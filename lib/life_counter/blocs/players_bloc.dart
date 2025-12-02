@@ -635,11 +635,9 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
         (player) => player.copyWith(life: player.life + event.delta),
       );
 
-    final updatedStats = state.stats.recordDamage(
-      event.attackerId,
-      event.targetId,
-      event.delta,
-    );
+    final updatedStats = state.stats
+        .recordDamage(event.attackerId, event.targetId, event.delta)
+        .recordHealing(event.attackerId, event.attackerId, event.delta);
 
     return state.copyWith(players: players, stats: updatedStats);
   }
@@ -666,11 +664,13 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       ),
     );
 
-    final updatedStats = state.stats.recordDamageToMultiple(
-      event.attackerId,
-      aliveOpponentIds,
-      event.delta,
-    );
+    final updatedStats = state.stats
+        .recordDamageToMultiple(event.attackerId, aliveOpponentIds, event.delta)
+        .recordHealing(
+          event.attackerId,
+          event.attackerId,
+          event.delta * numAliveOpponents,
+        );
 
     return state.copyWith(players: players, stats: updatedStats);
   }
