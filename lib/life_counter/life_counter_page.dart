@@ -10,6 +10,7 @@ import 'package:mtg_life_counter/life_counter/components/game_overview_tile.dart
 import 'package:mtg_life_counter/life_counter/components/rating_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/select_winner_tile.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
+import 'package:mtg_life_counter/life_counter/models/player_stats.dart';
 import 'package:mtg_life_counter/life_counter/models/postgame_phase.dart';
 import 'blocs/players_bloc.dart';
 import 'components/player_tile.dart';
@@ -256,10 +257,13 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           FloatingActionButton(
             heroTag: 'done',
             onPressed: () {
-              context.read<PlayersBloc>().add(FinishGame(
-                metadata: EventMetadata.now(sourcePlayerId: state.turnPlayerId)
-
-              ));
+              context.read<PlayersBloc>().add(
+                FinishGame(
+                  metadata: EventMetadata.now(
+                    sourcePlayerId: state.turnPlayerId,
+                  ),
+                ),
+              );
             },
             child: Icon(Icons.check),
           ),
@@ -304,7 +308,8 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           child: Stack(
             children: [
               _getPlayerGameTile(player, playerId, state.turnPlayerId),
-              if (state.isGameFinished) _getPlayerPostGameTile(player),
+              if (state.isGameFinished)
+                _getPlayerPostGameTile(player, state.stats),
             ],
           ),
         ),
@@ -343,7 +348,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     }
   }
 
-  Widget _getPlayerPostGameTile(Player player) {
+  Widget _getPlayerPostGameTile(Player player, PlayersStats stats) {
     return BlocBuilder<PostGameBloc, PostGameState>(
       builder: (context, state) {
         return switch (state.phase) {
@@ -356,7 +361,10 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
             player: player,
             rating: state.ratings[player.id]!,
           ),
-          PostGamePhase.overview => GameOverviewTile(player: player),
+          PostGamePhase.overview => GameOverviewTile(
+            player: player,
+            stats: stats,
+          ),
           PostGamePhase.completed => Text('Game over!'),
         };
       },

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
+import 'package:mtg_life_counter/life_counter/models/player_stats.dart';
 
 class EventMetadata {
   final int sourcePlayerId;
@@ -160,24 +161,28 @@ class PlayersState {
   final Map<int, Player> players;
   final int turnPlayerId;
   final List<PlayerHistoryEvent> eventHistory;
+  final PlayersStats stats;
 
   PlayersState(
     this.startingLife,
     this.players,
     this.turnPlayerId, [
     this.eventHistory = const [],
-  ]);
+    PlayersStats? stats,
+  ]) : stats = stats ?? PlayersStats.initialize(players.length);
 
   PlayersState copyWith({
     int? startingLife,
     Map<int, Player>? players,
     int? turnPlayerId,
     List<PlayerHistoryEvent>? eventHistory,
+    PlayersStats? stats,
   }) => PlayersState(
     startingLife ?? this.startingLife,
     players ?? this.players,
     turnPlayerId ?? this.turnPlayerId,
     eventHistory ?? this.eventHistory,
+    stats ?? this.stats,
   );
 
   bool get canUndo => eventHistory.isNotEmpty;
@@ -194,6 +199,8 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
           startingLife,
           _generatePlayers(playerCount, startingLife),
           0,
+          [],
+          PlayersStats.initialize(playerCount),
         ),
       ) {
     on<StartGame>((event, emit) {
@@ -201,7 +208,15 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
         event.playerCount,
         event.startingLifeTotal,
       );
-      emit(PlayersState(state.startingLife, players, 0, []));
+      emit(
+        PlayersState(
+          state.startingLife,
+          players,
+          0,
+          [],
+          PlayersStats.initialize(event.playerCount),
+        ),
+      );
     });
 
     on<FinishGame>((event, emit) {
@@ -229,6 +244,7 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
         _generatePlayers(state.players.length, state.startingLife),
         0,
         [],
+        PlayersStats.initialize(state.players.length),
       );
 
       for (final evt in newHistory) {
@@ -396,85 +412,200 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
     return state.copyWith(players: players);
   }
 
+  // Helper: Get list of alive opponent IDs
+  List<int> _getAliveOpponentIds(PlayersState state, int excludeId) {
+    return state.players.entries
+        .where((e) => e.key != excludeId && !e.value.isDead())
+        .map((e) => e.key)
+        .toList();
+  }
+
+  // Helper: Get list of all alive player IDs
+  List<int> _getAlivePlayerIds(PlayersState state) {
+    return state.players.entries
+        .where((e) => !e.value.isDead())
+        .map((e) => e.key)
+        .toList();
+  }
+
   // Single target operations
   PlayersState _damagePlayer(PlayersState state, DamagePlayer event) {
-    return _updateSinglePlayer(
+    final player = state.players[event.targetId];
+    if (player == null || player.isDead()) {
+      return state;
+    }
+
+    final updatedState = _updateSinglePlayer(
       state,
       event.targetId,
       (player) => player.copyWith(life: player.life - event.delta),
     );
+
+    final updatedStats = state.stats.recordDamage(
+      event.metadata.sourcePlayerId,
+      event.targetId,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   PlayersState _healPlayer(PlayersState state, HealPlayer event) {
-    return _updateSinglePlayer(
+    final player = state.players[event.targetId];
+    if (player == null || player.isDead()) {
+      return state;
+    }
+
+    final updatedState = _updateSinglePlayer(
       state,
       event.targetId,
       (player) => player.copyWith(life: player.life + event.delta),
     );
+
+    final updatedStats = state.stats.recordHealing(
+      event.metadata.sourcePlayerId,
+      event.targetId,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   PlayersState _infectDamagePlayer(
     PlayersState state,
     InfectDamagePlayer event,
   ) {
-    return _updateSinglePlayer(
+    final player = state.players[event.targetId];
+    if (player == null || player.isDead()) {
+      return state;
+    }
+
+    final updatedState = _updateSinglePlayer(
       state,
       event.targetId,
       (player) => player.copyWith(infect: player.infect + event.delta),
     );
+
+    final updatedStats = state.stats.recordInfectDamage(
+      event.metadata.sourcePlayerId,
+      event.targetId,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   // All players operations
   PlayersState _damagePlayers(PlayersState state, DamagePlayers event) {
-    return _updateAlivePlayers(
+    final alivePlayerIds = _getAlivePlayerIds(state);
+
+    final updatedState = _updateAlivePlayers(
       state,
       (player) => player.copyWith(life: player.life - event.delta),
     );
+
+    final updatedStats = state.stats.recordDamageToMultiple(
+      event.metadata.sourcePlayerId,
+      alivePlayerIds,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   PlayersState _healPlayers(PlayersState state, HealPlayers event) {
-    return _updateAlivePlayers(
+    final alivePlayerIds = _getAlivePlayerIds(state);
+
+    final updatedState = _updateAlivePlayers(
       state,
       (player) => player.copyWith(life: player.life + event.delta),
     );
+
+    final updatedStats = state.stats.recordHealingToMultiple(
+      event.metadata.sourcePlayerId,
+      alivePlayerIds,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   PlayersState _infectDamagePlayers(
     PlayersState state,
     InfectDamagePlayers event,
   ) {
-    return _updateAlivePlayers(
+    final alivePlayerIds = _getAlivePlayerIds(state);
+
+    final updatedState = _updateAlivePlayers(
       state,
       (player) => player.copyWith(infect: player.infect + event.delta),
     );
+
+    final updatedStats = state.stats.recordInfectDamageToMultiple(
+      event.metadata.sourcePlayerId,
+      alivePlayerIds,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   // Opponents operations
   PlayersState _damageOpponents(PlayersState state, DamageOpponents event) {
-    return _updateOpponents(
+    final aliveOpponentIds = _getAliveOpponentIds(state, event.attackerId);
+
+    final updatedState = _updateOpponents(
       state,
       event.attackerId,
       (player) => player.copyWith(life: player.life - event.delta),
     );
+
+    final updatedStats = state.stats.recordDamageToMultiple(
+      event.attackerId,
+      aliveOpponentIds,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   PlayersState _healOpponents(PlayersState state, HealOpponents event) {
-    return _updateOpponents(
+    final aliveOpponentIds = _getAliveOpponentIds(state, event.sourceId);
+
+    final updatedState = _updateOpponents(
       state,
       event.sourceId,
       (player) => player.copyWith(life: player.life + event.delta),
     );
+
+    final updatedStats = state.stats.recordHealingToMultiple(
+      event.sourceId,
+      aliveOpponentIds,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   PlayersState _infectDamageOpponents(
     PlayersState state,
     InfectDamageOpponents event,
   ) {
-    return _updateOpponents(
+    final aliveOpponentIds = _getAliveOpponentIds(state, event.attackerId);
+
+    final updatedState = _updateOpponents(
       state,
       event.attackerId,
       (player) => player.copyWith(infect: player.infect + event.delta),
     );
+
+    final updatedStats = state.stats.recordInfectDamageToMultiple(
+      event.attackerId,
+      aliveOpponentIds,
+      event.delta,
+    );
+
+    return updatedState.copyWith(stats: updatedStats);
   }
 
   // Special operations
@@ -501,7 +632,14 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
         event.attackerId,
         (player) => player.copyWith(life: player.life + event.delta),
       );
-    return state.copyWith(players: players);
+
+    final updatedStats = state.stats.recordDamage(
+      event.attackerId,
+      event.targetId,
+      event.delta,
+    );
+
+    return state.copyWith(players: players, stats: updatedStats);
   }
 
   PlayersState _extort(PlayersState state, Extort event) {
@@ -510,8 +648,8 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
       return state;
     }
 
-    final numAliveOpponents =
-        state.players.values.where((p) => !p.isDead()).length - 1;
+    final aliveOpponentIds = _getAliveOpponentIds(state, event.attackerId);
+    final numAliveOpponents = aliveOpponentIds.length;
 
     final players = state.players.map(
       (id, player) => MapEntry(
@@ -525,10 +663,22 @@ class PlayersBloc extends Bloc<PlayerEvent, PlayersState> {
                   : player.copyWith(life: player.life - event.delta)),
       ),
     );
-    return state.copyWith(players: players);
+
+    final updatedStats = state.stats.recordDamageToMultiple(
+      event.attackerId,
+      aliveOpponentIds,
+      event.delta,
+    );
+
+    return state.copyWith(players: players, stats: updatedStats);
   }
 
   PlayersState _commanderDamage(PlayersState state, CommanderDamage event) {
+    final player = state.players[event.targetId];
+    if (player == null || player.isDead()) {
+      return state;
+    }
+
     return _updateSinglePlayer(state, event.targetId, (player) {
       final commanderDamage = Map<int, int>.from(player.commanderDamage)
         ..update(
