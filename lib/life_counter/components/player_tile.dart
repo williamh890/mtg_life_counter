@@ -1,6 +1,7 @@
 // lib/ui/life_counter_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mtg_life_counter/life_counter/models/event_metadata.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
 import '../blocs/players_bloc.dart';
 

@@ -9,6 +9,7 @@ import 'package:mtg_life_counter/life_counter/components/dead_player_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/game_overview_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/rating_tile.dart';
 import 'package:mtg_life_counter/life_counter/components/select_winner_tile.dart';
+import 'package:mtg_life_counter/life_counter/models/event_metadata.dart';
 import 'package:mtg_life_counter/life_counter/models/player.dart';
 import 'package:mtg_life_counter/life_counter/models/player_stats.dart';
 import 'package:mtg_life_counter/life_counter/models/postgame_phase.dart';

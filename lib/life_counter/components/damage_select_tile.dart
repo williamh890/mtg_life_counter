@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 import 'package:mtg_life_counter/life_counter/models/damage_mode.dart';
+import 'package:mtg_life_counter/life_counter/models/event_metadata.dart';
 import 'package:mtg_life_counter/life_counter/models/target_select.dart';
 
 class DamageSelectTile extends StatefulWidget {

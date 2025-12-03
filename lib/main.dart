@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/postgame_bloc.dart';
 import 'package:mtg_life_counter/life_counter/life_counter_page.dart';
+import 'package:mtg_life_counter/main_menu/main_menu_page.dart';
 import 'package:mtg_life_counter/player_setup/blocs/game_setup_bloc.dart';
+import 'package:mtg_life_counter/profiles/blocs/profiles_bloc.dart';
+import 'package:mtg_life_counter/profiles/profiles_page.dart';
 import 'player_setup/player_setup_page.dart';
 import 'package:flutter/rendering.dart';
 
@@ -22,6 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider(create: (_) => ProfilesBloc()),
         BlocProvider(create: (_) => GameSetupBloc()),
         BlocProvider(
           create: (_) => PlayersBloc(startingLife: 40, playerCount: 4),
@@ -40,6 +44,10 @@ class AppRouter {
   Route onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
+        return MaterialPageRoute(builder: (_) => const MainMenuPage());
+      case '/profiles':
+        return MaterialPageRoute(builder: (_) => const ProfilesPage());
+      case '/player_setup':
         return MaterialPageRoute(builder: (_) => const PlayerSetupPage());
       case '/life_counter':
         return MaterialPageRoute(builder: (_) => LifeCounterPage());
