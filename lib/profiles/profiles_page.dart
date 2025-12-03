@@ -59,7 +59,9 @@ class ProfilesPage extends StatelessWidget {
                         ),
                       ),
                       title: Text(profile.username),
-                      subtitle: Text('ID: ${profile.id}'),
+                      subtitle: Text(
+                        '${profile.decks.length} ${profile.decks.length == 1 ? 'deck' : 'decks'}',
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
@@ -68,6 +70,13 @@ class ProfilesPage extends StatelessWidget {
                           );
                         },
                       ),
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/profile_detail',
+                          arguments: profile.id,
+                        );
+                      },
                     );
                   },
                 ),

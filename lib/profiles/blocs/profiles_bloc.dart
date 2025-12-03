@@ -1,20 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:math';
 
-class Profile {
-  final int id;
-  final String username;
-
-  Profile(this.id, this.username);
-
-  factory Profile.create(String username) {
-    return Profile(_generateUniqueId(), username);
-  }
-
-  static int _generateUniqueId() {
-    return Random().nextInt(1000000000);
-  }
-}
+import 'package:mtg_life_counter/profiles/models/deck.dart';
+import 'package:mtg_life_counter/profiles/models/profile.dart';
 
 // Events
 abstract class ProfilesEvent {}
@@ -38,6 +25,30 @@ class UpdateProfile extends ProfilesEvent {
   final String newUsername;
 
   UpdateProfile(this.profileId, this.newUsername);
+}
+
+class AddDeck extends ProfilesEvent {
+  final int profileId;
+  final String deckName;
+  final String commander;
+
+  AddDeck(this.profileId, this.deckName, this.commander);
+}
+
+class RemoveDeck extends ProfilesEvent {
+  final int profileId;
+  final int deckId;
+
+  RemoveDeck(this.profileId, this.deckId);
+}
+
+class UpdateDeck extends ProfilesEvent {
+  final int profileId;
+  final int deckId;
+  final String newName;
+  final String newCommander;
+
+  UpdateDeck(this.profileId, this.deckId, this.newName, this.newCommander);
 }
 
 // State
@@ -65,11 +76,16 @@ class ProfilesState {
 
 // Bloc
 class ProfilesBloc extends Bloc<ProfilesEvent, ProfilesState> {
-  ProfilesBloc() : super(ProfilesState(profiles: [
-        Profile.create('William'),
-        Profile.create('Kelvin'),
-        Profile.create('Brady'),
-  ])) {
+  ProfilesBloc()
+    : super(
+        ProfilesState(
+          profiles: [
+            Profile.create('William'),
+            Profile.create('Kelvin'),
+            Profile.create('Brady'),
+          ],
+        ),
+      ) {
     on<LoadProfiles>((event, emit) {
       // Load default profiles
       final defaultProfiles = [
@@ -99,7 +115,51 @@ class ProfilesBloc extends Bloc<ProfilesEvent, ProfilesState> {
     on<UpdateProfile>((event, emit) {
       final updatedProfiles = state.profiles.map((p) {
         if (p.id == event.profileId) {
-          return Profile(p.id, event.newUsername);
+          return Profile(p.id, event.newUsername, p.decks);
+        }
+        return p;
+      }).toList();
+
+      emit(state.copyWith(profiles: updatedProfiles));
+    });
+
+    on<AddDeck>((event, emit) {
+      final updatedProfiles = state.profiles.map((p) {
+        if (p.id == event.profileId) {
+          final updatedDecks = List<Deck>.from(p.decks)
+            ..add(Deck.create(event.deckName, event.commander));
+          return p.copyWith(decks: updatedDecks);
+        }
+        return p;
+      }).toList();
+
+      emit(state.copyWith(profiles: updatedProfiles));
+    });
+
+    on<RemoveDeck>((event, emit) {
+      final updatedProfiles = state.profiles.map((p) {
+        if (p.id == event.profileId) {
+          final updatedDecks = p.decks
+              .where((d) => d.id != event.deckId)
+              .toList();
+          return p.copyWith(decks: updatedDecks);
+        }
+        return p;
+      }).toList();
+
+      emit(state.copyWith(profiles: updatedProfiles));
+    });
+
+    on<UpdateDeck>((event, emit) {
+      final updatedProfiles = state.profiles.map((p) {
+        if (p.id == event.profileId) {
+          final updatedDecks = p.decks.map((d) {
+            if (d.id == event.deckId) {
+              return Deck(d.id, event.newName, event.newCommander);
+            }
+            return d;
+          }).toList();
+          return p.copyWith(decks: updatedDecks);
         }
         return p;
       }).toList();

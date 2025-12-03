@@ -10,8 +10,6 @@ class MainMenuPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.favorite, size: 80, color: Colors.red),
-            const SizedBox(height: 20),
             const Text(
               'Life Counter',
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
