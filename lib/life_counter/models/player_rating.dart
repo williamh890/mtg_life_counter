@@ -19,12 +19,14 @@ class PlayerRating {
   final GameRating? gameRating;
   final int? saltiness;
   final int? commendedPlayerId;
+  final int? cringePlayerId;
 
   PlayerRating(
     this.playerId,
     this.gameRating,
     this.saltiness,
     this.commendedPlayerId,
+    this.cringePlayerId,
   );
 
   PlayerRating copyWith({
@@ -32,12 +34,14 @@ class PlayerRating {
     GameRating? gameRating,
     int? saltiness,
     int? commendedPlayerId,
+    int? cringePlayerId,
   }) {
     return PlayerRating(
       playerId ?? this.playerId,
       gameRating ?? this.gameRating,
       saltiness ?? this.saltiness,
       commendedPlayerId ?? this.commendedPlayerId,
+      cringePlayerId ?? this.cringePlayerId,
     );
   }
 }

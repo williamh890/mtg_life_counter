@@ -37,6 +37,20 @@ class SetSaltiness extends PostGameEvent {
   SetSaltiness(this.playerId, this.salt);
 }
 
+class SetCommendedPlayer extends PostGameEvent {
+  final int playerId;
+  final int? commendedPlayerId;
+
+  SetCommendedPlayer(this.playerId, this.commendedPlayerId);
+}
+
+class SetCringePlayer extends PostGameEvent {
+  final int playerId;
+  final int? cringePlayerId;
+
+  SetCringePlayer(this.playerId, this.cringePlayerId);
+}
+
 class PostGameState {
   final PostGamePhase phase;
   final Map<int, Player> players;
@@ -158,6 +172,28 @@ class PostGameBloc extends Bloc<PostGameEvent, PostGameState> {
 
       emit(state.copyWith(ratings: updatedRatings));
     });
+
+    on<SetCommendedPlayer>((event, emit) {
+      final updatedRatings = Map<int, PlayerRating>.from(state.ratings);
+      final currentRating = updatedRatings[event.playerId]!;
+
+      updatedRatings[event.playerId] = currentRating.copyWith(
+        commendedPlayerId: event.commendedPlayerId,
+      );
+
+      emit(state.copyWith(ratings: updatedRatings));
+    });
+
+    on<SetCringePlayer>((event, emit) {
+      final updatedRatings = Map<int, PlayerRating>.from(state.ratings);
+      final currentRating = updatedRatings[event.playerId]!;
+
+      updatedRatings[event.playerId] = currentRating.copyWith(
+        cringePlayerId: event.cringePlayerId,
+      );
+
+      emit(state.copyWith(ratings: updatedRatings));
+    });
   }
 
   static Map<int, PlayerRating> _generatePlayerRatings(
@@ -165,7 +201,7 @@ class PostGameBloc extends Bloc<PostGameEvent, PostGameState> {
   ) {
     final ratings = {
       for (var player in players.values)
-        player.id: PlayerRating(player.id, null, null, null),
+        player.id: PlayerRating(player.id, null, null, null, null),
     };
     return ratings;
   }

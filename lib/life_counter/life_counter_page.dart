@@ -171,6 +171,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
                                 column,
                                 playerId,
                                 player,
+                                players,
                                 state,
                               );
                             }).toList(),
@@ -297,6 +298,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     List<int> column,
     int playerId,
     Player player,
+    Map<int, Player> players,
     PlayersState state,
   ) {
     final playerTile = Container(
@@ -310,7 +312,7 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
             children: [
               _getPlayerGameTile(player, playerId, state.turnPlayerId),
               if (state.isGameFinished)
-                _getPlayerPostGameTile(player, state.stats),
+                _getPlayerPostGameTile(player, players, state.stats),
             ],
           ),
         ),
@@ -349,7 +351,11 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
     }
   }
 
-  Widget _getPlayerPostGameTile(Player player, PlayersStats stats) {
+  Widget _getPlayerPostGameTile(
+    Player player,
+    Map<int, Player> players,
+    PlayersStats stats,
+  ) {
     return BlocBuilder<PostGameBloc, PostGameState>(
       builder: (context, state) {
         return switch (state.phase) {
@@ -360,6 +366,9 @@ class _LifeCounterPageState extends State<LifeCounterPage> {
           ),
           PostGamePhase.rating => RatingTile(
             player: player,
+            otherPlayers: players.values
+                .where((p) => p.id != player.id)
+                .toList(),
             rating: state.ratings[player.id]!,
           ),
           PostGamePhase.overview => GameOverviewTile(

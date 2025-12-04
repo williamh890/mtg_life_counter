@@ -6,9 +6,15 @@ import 'package:mtg_life_counter/life_counter/models/player_rating.dart';
 
 class RatingTile extends StatelessWidget {
   final Player player;
+  final List<Player> otherPlayers;
   final PlayerRating rating;
 
-  const RatingTile({super.key, required this.player, required this.rating});
+  const RatingTile({
+    super.key,
+    required this.player,
+    required this.otherPlayers,
+    required this.rating,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +74,105 @@ class RatingTile extends StatelessWidget {
                 onTap: () => _updateSaltiness(bloc, value),
               );
             }),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Commend and Cringe Dropdowns Side by Side
+          Row(
+            children: [
+              Expanded(
+                child: _buildPlayerDropdown(
+                  context: context,
+                  bloc: bloc,
+                  label: 'Commend',
+                  icon: Icons.thumb_up,
+                  iconColor: Colors.green,
+                  selectedPlayerId: rating.commendedPlayerId,
+                  excludedPlayerId: rating.cringePlayerId,
+                  onChanged: (playerId) =>
+                      bloc.add(SetCommendedPlayer(player.id, playerId)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildPlayerDropdown(
+                  context: context,
+                  bloc: bloc,
+                  label: 'Cringe',
+                  icon: Icons.thumb_down,
+                  iconColor: Colors.orange,
+                  selectedPlayerId: rating.cringePlayerId,
+                  excludedPlayerId: rating.commendedPlayerId,
+                  onChanged: (playerId) =>
+                      bloc.add(SetCringePlayer(player.id, playerId)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerDropdown({
+    required BuildContext context,
+    required PostGameBloc bloc,
+    required String label,
+    required IconData icon,
+    required Color iconColor,
+    required int? selectedPlayerId,
+    required int? excludedPlayerId,
+    required Function(int?) onChanged,
+  }) {
+    // Filter out the excluded player
+    final availablePlayers = otherPlayers
+        .where((p) => excludedPlayerId == null || p.id != excludedPlayerId)
+        .toList();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int?>(
+                isExpanded: true,
+                hint: Text(
+                  label,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
+                value: selectedPlayerId,
+                items: [
+                  DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                  ...availablePlayers.map((otherPlayer) {
+                    return DropdownMenuItem<int?>(
+                      value: otherPlayer.id,
+                      child: Text(
+                        otherPlayer.name,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: onChanged,
+              ),
+            ),
           ),
         ],
       ),
