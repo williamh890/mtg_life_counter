@@ -14,4 +14,16 @@ class Deck {
   static int _generateUniqueId() {
     return Random().nextInt(1000000000);
   }
+
+  Map<String, dynamic> toJson() {
+    return {"id": id, "name": name, "commander": commander};
+  }
+
+  static Deck fromJson(Map<String, dynamic> json) {
+    return Deck(
+      json["id"] as int,
+      json["name"] as String,
+      json["commander"] as String,
+    );
+  }
 }

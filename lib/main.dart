@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/players_bloc.dart';
 import 'package:mtg_life_counter/life_counter/blocs/postgame_bloc.dart';
 import 'package:mtg_life_counter/life_counter/life_counter_page.dart';
@@ -8,12 +10,24 @@ import 'package:mtg_life_counter/player_setup/blocs/game_setup_bloc.dart';
 import 'package:mtg_life_counter/profiles/blocs/profiles_bloc.dart';
 import 'package:mtg_life_counter/profiles/components/profile_detail.dart';
 import 'package:mtg_life_counter/profiles/profiles_page.dart';
+import 'package:path_provider/path_provider.dart';
 import 'player_setup/player_setup_page.dart';
 import 'package:flutter/rendering.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   debugPaintSizeEnabled = false;
+
+  final storage = await HydratedStorage.build(
+    storageDirectory: kIsWeb
+        ? HydratedStorageDirectory.web
+        : HydratedStorageDirectory(
+            (await getApplicationDocumentsDirectory()).path,
+          ),
+  );
+
+  HydratedBloc.storage = storage;
   runApp(MyApp());
 }
 
@@ -40,7 +54,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 
 class AppRouter {
   Route onGenerateRoute(RouteSettings settings) {

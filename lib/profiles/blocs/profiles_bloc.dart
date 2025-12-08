@@ -1,12 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 import 'package:mtg_life_counter/profiles/models/deck.dart';
 import 'package:mtg_life_counter/profiles/models/profile.dart';
 
 // Events
 abstract class ProfilesEvent {}
-
-class LoadProfiles extends ProfilesEvent {}
 
 class AddProfile extends ProfilesEvent {
   final String username;
@@ -72,10 +70,23 @@ class ProfilesState {
       return null;
     }
   }
+
+  Map<String, dynamic> toJson() => {
+    "profiles": profiles.map((p) => p.toJson()).toList(),
+  };
+
+  // deserialize ← json
+  static ProfilesState fromJson(Map<String, dynamic> json) {
+    return ProfilesState(
+      profiles: (json["profiles"] as List<dynamic>)
+          .map((p) => Profile.fromJson(p))
+          .toList(),
+    );
+  }
 }
 
 // Bloc
-class ProfilesBloc extends Bloc<ProfilesEvent, ProfilesState> {
+class ProfilesBloc extends HydratedBloc<ProfilesEvent, ProfilesState> {
   ProfilesBloc()
     : super(
         ProfilesState(
@@ -86,17 +97,6 @@ class ProfilesBloc extends Bloc<ProfilesEvent, ProfilesState> {
           ],
         ),
       ) {
-    on<LoadProfiles>((event, emit) {
-      // Load default profiles
-      final defaultProfiles = [
-        Profile.create('William'),
-        Profile.create('Kelvin'),
-        Profile.create('Brady'),
-      ];
-
-      emit(state.copyWith(profiles: defaultProfiles));
-    });
-
     on<AddProfile>((event, emit) {
       final updatedProfiles = List<Profile>.from(state.profiles)
         ..add(Profile.create(event.username));
@@ -166,5 +166,15 @@ class ProfilesBloc extends Bloc<ProfilesEvent, ProfilesState> {
 
       emit(state.copyWith(profiles: updatedProfiles));
     });
+  }
+
+  @override
+  ProfilesState? fromJson(Map<String, dynamic> json) {
+    return ProfilesState.fromJson(json);
+  }
+
+  @override
+  Map<String, dynamic>? toJson(ProfilesState state) {
+    return state.toJson();
   }
 }

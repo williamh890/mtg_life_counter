@@ -6,26 +6,38 @@ class Profile {
   final int id;
   final String username;
   final List<Deck> decks;
-  
+
   Profile(this.id, this.username, this.decks);
-  
+
   factory Profile.create(String username) {
     return Profile(_generateUniqueId(), username, []);
   }
-  
-  Profile copyWith({
-    int? id,
-    String? username,
-    List<Deck>? decks,
-  }) {
+
+  Profile copyWith({int? id, String? username, List<Deck>? decks}) {
     return Profile(
       id ?? this.id,
       username ?? this.username,
       decks ?? this.decks,
     );
   }
-  
+
   static int _generateUniqueId() {
     return Random().nextInt(1000000000);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "username": username,
+      "decks": decks.map((d) => d.toJson()).toList(),
+    };
+  }
+
+  static Profile fromJson(Map<String, dynamic> json) {
+    return Profile(
+      json["id"] as int,
+      json["username"] as String,
+      (json["decks"] as List<dynamic>).map((e) => Deck.fromJson(e)).toList(),
+    );
   }
 }

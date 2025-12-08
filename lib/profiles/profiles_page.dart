@@ -14,7 +14,7 @@ class ProfilesPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              context.read<ProfilesBloc>().add(LoadProfiles());
+              // Maybe load profiles from API
             },
             tooltip: 'Load Profiles',
           ),
