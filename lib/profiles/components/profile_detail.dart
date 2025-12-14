@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/profiles/blocs/profiles_bloc.dart';
+// Import the dialog helper function
+import 'add_deck_dialog.dart';
 
-class ProfileDetailPage extends StatelessWidget {
+class ProfileDetail extends StatelessWidget {
+  // Renamed to ProfileDetail
   final int profileId;
 
-  const ProfileDetailPage({super.key, required this.profileId});
+  const ProfileDetail({super.key, required this.profileId});
 
   @override
   Widget build(BuildContext context) {
+    // ... (Scaffold, AppBar, BlocBuilder remains the same)
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: const Text('Profile Detail')),
       body: BlocBuilder<ProfilesBloc, ProfilesState>(
         builder: (context, state) {
           final profile = state.getProfile(profileId);
@@ -22,6 +26,7 @@ class ProfileDetailPage extends StatelessWidget {
           return Column(
             children: [
               // Profile Header
+              // ... (Container and content remain the same)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
@@ -71,7 +76,8 @@ class ProfileDetailPage extends StatelessWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.add),
-                      onPressed: () => _showAddDeckDialog(context, profileId),
+                      // CALL THE EXTERNAL HELPER
+                      onPressed: () => showAddDeckDialog(context, profileId),
                       tooltip: 'Add Deck',
                     ),
                   ],
@@ -100,7 +106,7 @@ class ProfileDetailPage extends StatelessWidget {
                             const SizedBox(height: 24),
                             ElevatedButton.icon(
                               onPressed: () =>
-                                  _showAddDeckDialog(context, profileId),
+                                  showAddDeckDialog(context, profileId),
                               icon: const Icon(Icons.add),
                               label: const Text('Add Deck'),
                             ),
@@ -149,63 +155,6 @@ class ProfileDetailPage extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-
-  void _showAddDeckDialog(BuildContext context, int profileId) {
-    final nameController = TextEditingController();
-    final commanderController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Add Deck'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Deck Name',
-                  hintText: 'Enter deck name',
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: commanderController,
-                decoration: const InputDecoration(
-                  labelText: 'Commander',
-                  hintText: 'Enter commander name',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.trim().isNotEmpty &&
-                    commanderController.text.trim().isNotEmpty) {
-                  context.read<ProfilesBloc>().add(
-                    AddDeck(
-                      profileId,
-                      nameController.text.trim(),
-                      commanderController.text.trim(),
-                    ),
-                  );
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

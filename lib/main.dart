@@ -65,7 +65,7 @@ class AppRouter {
       case '/profile_detail':
         final profileId = settings.arguments as int;
         return MaterialPageRoute(
-          builder: (_) => ProfileDetailPage(profileId: profileId),
+          builder: (_) => ProfileDetail(profileId: profileId),
         );
       case '/player_setup':
         return MaterialPageRoute(builder: (_) => const PlayerSetupPage());

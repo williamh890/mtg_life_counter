@@ -4,6 +4,7 @@ class Deck {
   int id;
   String name;
   String commander;
+  
 
   Deck(this.id, this.name, this.commander);
 
