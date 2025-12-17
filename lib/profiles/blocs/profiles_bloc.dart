@@ -27,10 +27,9 @@ class UpdateProfile extends ProfilesEvent {
 
 class AddDeck extends ProfilesEvent {
   final int profileId;
-  final String deckName;
-  final String commander;
+  final Deck deck;
 
-  AddDeck(this.profileId, this.deckName, this.commander);
+  AddDeck(this.profileId, this.deck);
 }
 
 class RemoveDeck extends ProfilesEvent {
@@ -126,8 +125,7 @@ class ProfilesBloc extends HydratedBloc<ProfilesEvent, ProfilesState> {
     on<AddDeck>((event, emit) {
       final updatedProfiles = state.profiles.map((p) {
         if (p.id == event.profileId) {
-          final updatedDecks = List<Deck>.from(p.decks)
-            ..add(Deck.create(event.deckName, event.commander));
+          final updatedDecks = List<Deck>.from(p.decks)..add(event.deck);
           return p.copyWith(decks: updatedDecks);
         }
         return p;
@@ -142,23 +140,6 @@ class ProfilesBloc extends HydratedBloc<ProfilesEvent, ProfilesState> {
           final updatedDecks = p.decks
               .where((d) => d.id != event.deckId)
               .toList();
-          return p.copyWith(decks: updatedDecks);
-        }
-        return p;
-      }).toList();
-
-      emit(state.copyWith(profiles: updatedProfiles));
-    });
-
-    on<UpdateDeck>((event, emit) {
-      final updatedProfiles = state.profiles.map((p) {
-        if (p.id == event.profileId) {
-          final updatedDecks = p.decks.map((d) {
-            if (d.id == event.deckId) {
-              return Deck(d.id, event.newName, event.newCommander);
-            }
-            return d;
-          }).toList();
           return p.copyWith(decks: updatedDecks);
         }
         return p;
