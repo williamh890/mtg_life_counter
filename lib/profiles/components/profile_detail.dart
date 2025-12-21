@@ -45,19 +45,13 @@ class ProfileDetail extends StatelessWidget {
             radius: 50,
             child: Text(
               profile.username[0].toUpperCase(),
-              style: const TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             profile.username,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -77,10 +71,7 @@ class ProfileDetail extends StatelessWidget {
         children: [
           const Text(
             'Decks',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -100,10 +91,7 @@ class ProfileDetail extends StatelessWidget {
               itemCount: profile.decks.length,
               itemBuilder: (context, index) {
                 final deck = profile.decks[index];
-                return _DeckCard(
-                  deck: deck,
-                  profileId: profileId,
-                );
+                return _DeckCard(deck: deck, profileId: profileId);
               },
             ),
     );
@@ -114,18 +102,11 @@ class ProfileDetail extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.style,
-            size: 64,
-            color: Colors.grey,
-          ),
+          const Icon(Icons.style, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
           const Text(
             'No decks yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -148,18 +129,12 @@ class _DeckCard extends StatelessWidget {
   static const double _aspectRatio = 626 / 457; // Original aspect ratio
   static double get _imageHeight => _imageWidth / _aspectRatio;
 
-  const _DeckCard({
-    required this.deck,
-    required this.profileId,
-  });
+  const _DeckCard({required this.deck, required this.profileId});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -187,23 +162,17 @@ class _DeckCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     deck.commander.typeLine,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(
-                Icons.delete,
-                color: Colors.red,
-              ),
+              icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () {
                 context.read<ProfilesBloc>().add(
-                      RemoveDeck(profileId, deck.id),
-                    );
+                  RemoveDeck(profileId, deck.id),
+                );
               },
             ),
           ],
@@ -213,7 +182,9 @@ class _DeckCard extends StatelessWidget {
   }
 
   Widget _buildCommanderArt() {
-    if (deck.commander.artImageUrl.isEmpty) {
+    final art = deck.commander.art;
+
+    if (art.url.isEmpty) {
       return SizedBox(
         width: _imageWidth,
         height: _imageHeight,
@@ -223,8 +194,8 @@ class _DeckCard extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        deck.commander.artImageUrl,
+      child: Image(
+        image: art.provider,
         width: _imageWidth,
         height: _imageHeight,
         fit: BoxFit.cover,
@@ -244,7 +215,7 @@ class _DeckCard extends StatelessWidget {
               child: CircularProgressIndicator(
                 value: loadingProgress.expectedTotalBytes != null
                     ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
+                          loadingProgress.expectedTotalBytes!
                     : null,
               ),
             ),
@@ -253,4 +224,4 @@ class _DeckCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

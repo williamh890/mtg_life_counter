@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:mtg_life_counter/profiles/services/scryfall_service.dart';
+import 'package:mtg_life_counter/profiles/models/card_info.dart';
 
 class Deck {
   int id;

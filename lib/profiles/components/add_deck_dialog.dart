@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mtg_life_counter/profiles/blocs/profiles_bloc.dart';
+import 'package:mtg_life_counter/profiles/models/card_info.dart';
 import 'package:mtg_life_counter/profiles/models/deck.dart';
 import 'package:mtg_life_counter/profiles/services/scryfall_service.dart';
 import 'dart:async';
+
+import 'package:mtg_life_counter/services/image_store.dart';
 
 // --- Debouncer Utility ---
 class Debouncer {
@@ -96,17 +99,47 @@ class _AddDeckDialogState extends State<AddDeckDialog> {
     });
   }
 
-  void _submitDeck() {
+  Future<void> _submitDeck() async {
     if (_selectedCommander == null) return;
 
     final name = _nameController.text.trim().isEmpty
         ? _selectedCommander!.name
         : _nameController.text.trim();
 
-    final deck = Deck.create(name, _selectedCommander!);
+    final localCommander = await _persistDeckImages(_selectedCommander!);
 
+    final deck = Deck.create(name, localCommander);
+
+    if (!mounted) return;
     context.read<ProfilesBloc>().add(AddDeck(widget.profileId, deck));
+
     Navigator.of(context).pop();
+  }
+
+  Future<CardInfo> _persistDeckImages(CardInfo commander) async {
+    final safe = commander.name
+        .replaceAll(RegExp(r'[^\w]+'), '_')
+        .toLowerCase();
+
+    final art = await ImageStore.ensureLocal(
+      commander.art,
+      namespace: 'deck_images',
+      filename: '${safe}_art.jpg',
+    );
+
+    final card = await ImageStore.ensureLocal(
+      commander.card,
+      namespace: 'deck_images',
+      filename: '${safe}_card.jpg',
+    );
+
+    return CardInfo(
+      name: commander.name,
+      manaCost: commander.manaCost,
+      typeLine: commander.typeLine,
+      art: art,
+      card: card,
+    );
   }
 
   bool get _canSubmit => _commanderController.text.trim().isNotEmpty;
@@ -289,18 +322,23 @@ class _CardGridItem extends StatelessWidget {
   }
 
   Widget _buildCardImage() {
-    if (card.cardImageUrl.isEmpty) {
-      return Container(
-        color: Colors.grey[200],
+    if (card.card.isCached || card.card.url.isNotEmpty) {
+      return Image(
+        image: card.card.provider,
+        fit: BoxFit.contain,
         width: double.infinity,
-        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey[200],
+          width: double.infinity,
+          child: const Icon(Icons.image_not_supported, color: Colors.grey),
+        ),
       );
     }
 
-    return Image.network(
-      card.cardImageUrl,
-      fit: BoxFit.contain,
+    return Container(
+      color: Colors.grey[200],
       width: double.infinity,
+      child: const Icon(Icons.image_not_supported, color: Colors.grey),
     );
   }
 }
@@ -340,16 +378,13 @@ class _CommanderPreviewCard extends StatelessWidget {
   Widget _buildCommanderThumbnail() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: commander.cardImageUrl.isNotEmpty
-          ? Image.network(
-              commander.cardImageUrl,
-              width: 60,
-              height: 84,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.broken_image, size: 60),
-            )
-          : const Icon(Icons.image_not_supported, size: 60),
+      child: Image(
+        image: commander.card.provider,
+        width: 60,
+        height: 84,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 60),
+      ),
     );
   }
 
